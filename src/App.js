@@ -1,23 +1,15 @@
-import logo from './logo.svg';
+// Import React
+import React from 'react';
+// Import the Dashboard component
+import Dashboard from './Dashboard'; // Ensure the path is correct
+// Import the CSS file for styling
 import './App.css';
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {/* Render the Dashboard component */}
+      <Dashboard />
     </div>
   );
 }
