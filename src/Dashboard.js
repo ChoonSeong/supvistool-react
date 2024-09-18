@@ -1,7 +1,56 @@
-import React from 'react';
-import { Bell, ChevronDown, Eye, FileText, History, Settings } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Bell,
+  ChevronDown,
+  Eye,
+  FileText,
+  History,
+  Settings,
+} from "lucide-react";
 
 export default function Dashboard() {
+  const [selectData, setSelectData] = useState([]);
+
+  useEffect(() => {
+    let processing = true;
+    fetchData(processing);
+    return () => {
+      processing = false;
+    };
+  }, []);
+
+  const fetchData = async (processing) => {
+    const option = { method: "GET" };
+    await fetch("http://localhost:4000/gateway1", option)
+      .then((response) => response.json())
+      .then((data) => {
+        if (processing) {
+          setSelectData(data);
+        }
+      })
+      .catch((error) => console.log("Error: ", error));
+  };
+
+  const ShowData = () => {
+    return (
+      <div>
+        {selectData?.map((data) => (
+          <div key={data.gateway}>
+            <h3>Gateway: {data.gateway}</h3>
+
+            {data.devices.map((device, index) => (
+              <div key={index}>
+                <p>MAC: {device.mac}</p>
+                <p>Timestamp: {device.timestamp}</p>
+                <p>RSSI: {device.rssi}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
@@ -10,10 +59,30 @@ export default function Dashboard() {
           <div className="flex items-center">
             <h1 className="text-2xl font-semibold text-blue-600">Navigine</h1>
             <nav className="ml-10 flex space-x-4">
-              <a href="#" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-700">Online tracking</a>
-              <a href="#" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Track history</a>
-              <a href="#" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Reports</a>
-              <a href="#" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Settings</a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-700"
+              >
+                Online tracking
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Track history
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Reports
+              </a>
+              <a
+                href="#"
+                className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Settings
+              </a>
             </nav>
           </div>
           <div className="flex items-center">
@@ -35,32 +104,72 @@ export default function Dashboard() {
           <div className="w-64 pr-8">
             <div className="space-y-4">
               <div>
-                <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                <select id="location" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <label
+                  htmlFor="location"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Location
+                </label>
+                <select
+                  id="location"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
                   <option>Factory 5</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="floor" className="block text-sm font-medium text-gray-700">Floor</label>
-                <select id="floor" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <label
+                  htmlFor="floor"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Floor
+                </label>
+                <select
+                  id="floor"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
                   <option>Area 7</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="zone" className="block text-sm font-medium text-gray-700">Zone</label>
-                <select id="zone" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <label
+                  htmlFor="zone"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Zone
+                </label>
+                <select
+                  id="zone"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
                   <option>None</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="group" className="block text-sm font-medium text-gray-700">Group</label>
-                <select id="group" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <label
+                  htmlFor="group"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Group
+                </label>
+                <select
+                  id="group"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
                   <option>All</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="object" className="block text-sm font-medium text-gray-700">Object</label>
-                <select id="object" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                <label
+                  htmlFor="object"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Object
+                </label>
+                <select
+                  id="object"
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                >
                   <option>Select object</option>
                 </select>
               </div>
@@ -73,7 +182,9 @@ export default function Dashboard() {
             </div>
             <div className="mt-8 space-y-2">
               <p className="text-sm text-gray-500">Objects on the floor: 6</p>
-              <p className="text-sm text-gray-500">Objects in the building: 6</p>
+              <p className="text-sm text-gray-500">
+                Objects in the building: 6
+              </p>
             </div>
           </div>
 
@@ -85,6 +196,9 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+      <div>
+        <ShowData />
+      </div>
     </div>
   );
 }
