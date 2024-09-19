@@ -12,8 +12,16 @@ export default function Dashboard() {
               <a href="#" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-100 text-blue-700">Online tracking</a>
             </nav>
           </div>
+
+          {/* Logout Button */}
+          <button 
+            onClick={handleLogout} 
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition">
+            Logout
+          </button>
         </div>
       </header>
+
       {/* Main content */}
       <main className="flex-1 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex">
