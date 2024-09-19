@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const router = require("./routes/router");
+const router = require("./features/router");
+require("./features/mqttClient");
 
 const app = express();
 
