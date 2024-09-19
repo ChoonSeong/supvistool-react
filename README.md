@@ -62,3 +62,5 @@ npm start
 ```
 
 The backend will start and listen on port 4000.
+The backend consist of running MQTT broker --> node.js --> react. Additionally, it will also store the json data in a temporary storage in real time.
+

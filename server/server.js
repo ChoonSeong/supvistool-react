@@ -25,7 +25,7 @@ app.get('/events', (req, res) => {
 app.get('/data', (req, res) => {
   const data = rssiHandler.getRssiData();
   res.send(`
-      <h1>RSSI Data</h1>
+      <h1>Data Storage</h1>
       <pre>${JSON.stringify(data, null, 2)}</pre>
       <script>
           // Create an EventSource to listen for updates from the server
