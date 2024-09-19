@@ -17,48 +17,77 @@
 const mqtt = require("mqtt");
 const fs = require("fs");
 
-// your credentials
+// MQTT connection options (credentials)
 const options = {
   username: "supvistool",
   password: "1234Gateway",
 };
 
-// connect to your cluster, insert your host name and port
+// connect to hivemq cluster
 const client = mqtt.connect(
   "tls://194f6ad3ec394491959182c6d30a59ef.s1.eu.hivemq.cloud:8883",
   options
 );
 
-let messageBuffer = [];
+// Store buffers for each gateway
+const gatewayBuffers = {
+  ac233fc17756: [], // Gateway 1
+  ac233ffb3adb: [], // Gateway 2
+  ac233ffb3adc: [], // Gateway 3
+};
 
-// prints a received message
+// Map gateways to topics (assuming your topics follow this pattern)
+const topics = [
+  "/gw/ac233fc17756/status", // Gateway 1
+  "/gw/ac233ffb3adb/status", // Gateway 2
+  "/gw/ac233ffb3adc/status", // Gateway 3
+];
+
+// Function to save the messages to a file
+function saveToFile(gatewayId, buffer) {
+  const filename = `${gatewayId}_data.json`;
+
+  fs.writeFile(filename, JSON.stringify(buffer, null, 2), (err) => {
+    if (err) throw err;
+    console.log(`100 messages saved to ${filename}`);
+    gatewayBuffers[gatewayId] = []; // Clear buffer after writing to the file
+  });
+}
+
+// Handle received messages
 client.on("message", function (topic, message) {
-  const jsonMessage = JSON.parse(message.toString()); // convert byte array to string and then to JSON
-  messageBuffer.push(jsonMessage);
+  const jsonMessage = JSON.parse(message.toString());
 
-  // If we have 100 messages, write them to a file
-  if (messageBuffer.length === 100) {
-    fs.writeFile(
-      "iot_data.json",
-      JSON.stringify(messageBuffer, null, 2),
-      (err) => {
-        if (err) throw err;
-        console.log("100 messages saved to iot_data.json");
-        messageBuffer = []; // clear the buffer after writing to the file
-      }
-    );
+  // Extract gateway ID from the topic
+  const gatewayId = topic.split("/")[2]; // assuming the topic is '/gw/{gatewayId}/status'
+
+  if (gatewayBuffers[gatewayId]) {
+    gatewayBuffers[gatewayId].push(jsonMessage);
+
+    // If buffer reaches 100 messages, save to file
+    if (gatewayBuffers[gatewayId].length === 100) {
+      saveToFile(gatewayId, gatewayBuffers[gatewayId]);
+    }
   }
 });
 
 // reassurance that the connection worked
 client.on("connect", () => {
   console.log("Connected!");
+
+  // Subscribe to all gateway topics
+  topics.forEach((topic) => {
+    client.subscribe(topic, (err) => {
+      if (err) {
+        console.log(`Failed to subscribe to ${topic}:`, err);
+      } else {
+        console.log(`Subscribed to ${topic}`);
+      }
+    });
+  });
 });
 
 // prints an error message
 client.on("error", (error) => {
   console.log("Error:", error);
 });
-
-// subscribe to the topic
-client.subscribe("/gw/ac233ffb3adc/status");
