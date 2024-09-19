@@ -13,7 +13,8 @@ cd supvistool-react
 
 ### 2. Install Dependencies
 
-Frontend (React)
+#### Frontend (React)
+
 In the root folder, install the dependencies:
 
 ```bash
@@ -24,7 +25,8 @@ Packages required:
 
 - lucide-react
 
-Backend (Express)
+#### Backend (Express)
+
 Navigate to the server folder and install dependencies:
 
 ```bash
