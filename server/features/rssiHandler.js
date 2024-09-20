@@ -1,14 +1,12 @@
-const fs = require('fs');
-const path = require('path');
+// Focuses on processing RSSI data
+let rssiData = {};
 
-// Temporary storage for RSSI data
-let rssiData = [];
-let sseClients = [];
+function calculateAverageRssi(rssiValues) {
+  if (rssiValues.length === 0) return null;
+  const sum = rssiValues.reduce((acc, value) => acc + value, 0);
+  return sum / rssiValues.length;
+}
 
-// Store the timers to debounce multiple file change events
-let fileChangeTimers = {};
-
-// Extract RSSI, MAC, and timestamp data
 function extractRssiData(jsonData, gateway) {
   jsonData.forEach((entry) => {
     const tagInfo = entry[1];
@@ -16,78 +14,43 @@ function extractRssiData(jsonData, gateway) {
     const rssi = tagInfo.rssi;
     const timeStamp = new Date(tagInfo.timestamp).toLocaleString();
 
-    rssiData.push({ gateway, timeStamp, mac: macAddress, rssi });
-  });
-}
-
-// Read and extract data from each file
-function readAndExtractData(filePath, gateway) {
-  const fullPath = path.join(__dirname, '..', 'data', filePath);
-  fs.readFile(fullPath, 'utf8', (err, data) => {
-    if (err) {
-      console.error(`Error reading JSON file ${fullPath}:`, err);
-      return;
+    if (!rssiData[macAddress]) {
+      rssiData[macAddress] = { gateways: {}, position: { x: null, y: null } };
     }
 
-    const jsonData = JSON.parse(data);
-    extractRssiData(jsonData, gateway);
-    console.log(`Data extracted from ${gateway}`);
-    notifyClients();
+    if (!rssiData[macAddress].gateways[gateway]) {
+      rssiData[macAddress].gateways[gateway] = { rssiValues: [], averageRssi: null, distance: null, lastUpdated: null };
+    }
+
+    const gatewayInfo = rssiData[macAddress].gateways[gateway];
+    gatewayInfo.rssiValues.push(rssi);
+
+    if (gatewayInfo.rssiValues.length > 100) {
+      gatewayInfo.rssiValues.shift();
+    }
+
+    gatewayInfo.averageRssi = calculateAverageRssi(gatewayInfo.rssiValues);
+    gatewayInfo.lastUpdated = timeStamp;
   });
 }
 
-// Notify SSE clients
-function notifyClients() {
-  sseClients.forEach((client) => {
-    client.write(`data: updated\n\n`);
-  });
-}
-
-// Initialize reading and watching files
-function initializeFileReading() {
-  const filePaths = [
-    { file: 'ac233fc17756_data.json', gateway: 'ac233fc17756' },
-    { file: 'ac233ffb3adb_data.json', gateway: 'ac233ffb3adb' },
-    { file: 'ac233ffb3adc_data.json', gateway: 'ac233ffb3adc' }
-  ];
-
-  filePaths.forEach(({ file, gateway }) => {
-    const fullPath = path.join(__dirname, '..', 'data', file);
-    readAndExtractData(file, gateway);
-
-    fs.watch(fullPath, (eventType) => {
-      if (eventType === 'change') {
-        // Debounce file change handling to avoid repeated processing
-        if (fileChangeTimers[file]) {
-          clearTimeout(fileChangeTimers[file]);
-        }
-
-        fileChangeTimers[file] = setTimeout(() => {
-          console.log(`${file} changed. Reloading data...`);
-          rssiData = rssiData.filter((item) => item.gateway !== gateway);
-          readAndExtractData(file, gateway);
-        }, 100);  // Adjust the debounce delay as needed (100ms should be sufficient)
-      }
-    });
-  });
-}
-
-// Register SSE client
-function registerSSEClient(req, res) {
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.flushHeaders();
-
-  sseClients.push(res);
-  req.on('close', () => {
-    sseClients = sseClients.filter(client => client !== res);
-  });
-}
-
-// Retrieve stored data
 function getRssiData() {
-  return rssiData;
+  const dataToReturn = JSON.parse(JSON.stringify(rssiData));
+
+  for (const mac in dataToReturn) {
+    // Retrieve each tag's gateways
+    const gateways = dataToReturn[mac].gateways;
+
+    // Log just the tag (mac address) without the timestamp
+    console.log(`Tag ${mac} updated.`);
+
+    // Remove raw RSSI values from the data before returning
+    for (const gateway in gateways) {
+      delete gateways[gateway].rssiValues;
+    }
+  }
+
+  return dataToReturn;
 }
 
-module.exports = { initializeFileReading, getRssiData, registerSSEClient };
+module.exports = { extractRssiData, getRssiData };

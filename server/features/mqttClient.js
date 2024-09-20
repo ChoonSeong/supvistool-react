@@ -14,32 +14,29 @@
  * limitations under the License.
  */
 
-// features/mqttClient.js
+// mqttClient.js
 const mqtt = require("mqtt");
 const fs = require("fs");
 const path = require("path");
 
-// MQTT connection options
 const options = {
   username: "supvistool",
   password: "1234Gateway",
 };
 
-// Store buffers for each gateway
 const gatewayBuffers = {
   ac233fc17756: [],
   ac233ffb3adb: [],
   ac233ffb3adc: [],
 };
 
-// Map gateways to topics
 const topics = [
   "/gw/ac233fc17756/status",
   "/gw/ac233ffb3adb/status",
   "/gw/ac233ffb3adc/status",
 ];
 
-// Function to save messages to a file
+// Function to save buffered messages to a file
 function saveToFile(gatewayId, buffer) {
   const dataDir = path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) {
@@ -49,44 +46,40 @@ function saveToFile(gatewayId, buffer) {
 
   fs.writeFile(filename, JSON.stringify(buffer, null, 2), (err) => {
     if (err) throw err;
-    console.log(`100 messages saved to ${filename}`);
+    console.log(`Saved 100 messages for gateway ${gatewayId}`); // Only log once every 100 messages
     gatewayBuffers[gatewayId] = [];
   });
 }
 
-// Initialize MQTT client and handle subscriptions
+// Initialize MQTT client
 function initializeMqttClient() {
   const client = mqtt.connect("tls://194f6ad3ec394491959182c6d30a59ef.s1.eu.hivemq.cloud:8883", options);
 
   client.on("message", (topic, message) => {
-    const jsonMessage = JSON.parse(message.toString());
     const gatewayId = topic.split("/")[2];
 
     if (gatewayBuffers[gatewayId]) {
-      gatewayBuffers[gatewayId].push(jsonMessage);
+      gatewayBuffers[gatewayId].push(JSON.parse(message.toString()));
 
       if (gatewayBuffers[gatewayId].length === 100) {
-        saveToFile(gatewayId, gatewayBuffers[gatewayId]);
+        saveToFile(gatewayId, gatewayBuffers[gatewayId]); // Save and log after every 100 messages
       }
     }
   });
 
   client.on("connect", () => {
-    console.log("Connected to HiveMQ!");
-
+    console.log("Connected to HiveMQ!"); // Keep only key logs
     topics.forEach((topic) => {
       client.subscribe(topic, (err) => {
         if (err) {
           console.log(`Failed to subscribe to ${topic}:`, err);
-        } else {
-          console.log(`Subscribed to ${topic}`);
         }
       });
     });
   });
 
   client.on("error", (error) => {
-    console.log("MQTT Error:", error);
+    console.log("MQTT Error:", error); // Log errors only
   });
 }
 
