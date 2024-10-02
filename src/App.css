@@ -3,42 +3,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Your existing custom styles */
-.App {
-  text-align: center;
+
+/* Your existing styles */
+
+.flex-1 {
+  flex: 1; /* Allow this element to grow and fill space */
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.h-full {
+  height: 100%; /* Ensure this fills the parent's height */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.bg-white {
+  background-color: white; /* Background color */
+  border-radius: 0.5rem; /* Rounded corners */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Shadow effect */
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.p-4 {
+  padding: 1rem; /* Padding inside the container */
 }
