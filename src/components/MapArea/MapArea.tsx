@@ -27,8 +27,8 @@ const MapArea: FC<MapAreaInterface> = ({
     // Set the viewBox to match the drawing area
     svgMap.attr("viewBox", `-100 -100 1560 883`);
 
-    // Define points of the L-shaped polygon (update these to match the required L shape)
-    const polygonPoints = [
+    // Define points of the inner polygon (inner walls)
+    const innerPolygonPoints = [
       [0, 0], // Point 1
       [1360, 0], // Point 2
       [1360, 683], // Point 3
@@ -37,44 +37,90 @@ const MapArea: FC<MapAreaInterface> = ({
       [0, 435], // Point 6
     ];
 
-    // Draw the L-shaped polygon using the points
+    // Define points of the outer polygon (outer walls)
+    const outerPolygonPoints = [
+      [-10, -10], // Point 1
+      [1370, -10], // Point 2
+      [1370, 693], // Point 3
+      [102.4, 693], // Point 4
+      [102.4, 445], // Point 5
+      [-10, 445], // Point 6
+    ];
+
+    /* Create a path that draws the outer and inner polygons and uses the even-odd rule to fill between them */
+    const pathData = d3.path();
+
+    // Draw outer polygon (outer walls)
+    pathData.moveTo(outerPolygonPoints[0][0], outerPolygonPoints[0][1]);
+    outerPolygonPoints.forEach((point) => pathData.lineTo(point[0], point[1]));
+    pathData.closePath();
+
+    // Draw inner polygon (inner walls)
+    pathData.moveTo(innerPolygonPoints[0][0], innerPolygonPoints[0][1]);
+    innerPolygonPoints.forEach((point) => pathData.lineTo(point[0], point[1]));
+    pathData.closePath();
+
+    // Append the path to SVG and fill with color
     svgMap
-      .append("polygon")
-      .attr("points", polygonPoints.map((d) => d.join(",")).join(" ")) // Join points into a string
-      .attr("fill", "none")
+      .append("path")
+      .attr("d", pathData.toString())
+      .attr("fill", "gray")
       .attr("stroke", "black")
-      .attr("stroke-width", 4);
+      .attr("stroke-width", 4)
+      .attr("fill-rule", "evenodd"); // Fill only the space between outer and inner polygons
 
     // --- Axes ---
     // Create scales for the x and y axes
-    const xScale = d3.scaleLinear().domain([0, 1360]).range([0, 1360]);
-    const yScale = d3.scaleLinear().domain([0, 683]).range([0, 683]);
+    const xScale = d3.scaleLinear().domain([0, 13.6]).range([0, 1360]);
+    const yScale = d3.scaleLinear().domain([0, 6.83]).range([0, 683]);
 
     // Add bottom axis
     svgMap
       .append("g")
-      .attr("transform", `translate(0, 713)`)
-      .call(d3.axisBottom(xScale).tickSize(-743).tickFormat(d => d + " cm"));
+      .attr("transform", `translate(0, 713)`) // Set the axis to be 30px away from the map
+      .call(
+        d3
+          .axisBottom(xScale)
+          .ticks(28)
+          .tickSize(-743)
+          .tickFormat((d) => d + " m")
+      );
 
     // Add top axis
     svgMap
       .append("g")
-      .attr("transform", `translate(0, -30)`)
-      .call(d3.axisTop(xScale).tickFormat(d => d + " cm"));
+      .attr("transform", `translate(0, -30)`) // Set the axis to be 30px away from the map
+      .call(
+        d3
+          .axisTop(xScale)
+          .ticks(28)
+          .tickFormat((d) => d + " m")
+      );
 
     // Add left axis
     svgMap
       .append("g")
-      .attr("transform", `translate(-30, 0)`)
-      .call(d3.axisLeft(yScale).tickSize(-1420).tickFormat(d => d + " cm"));
+      .attr("transform", `translate(-30, 0)`) // Set the axis to be 30px away from the map
+      .call(
+        d3
+          .axisLeft(yScale)
+          .ticks(14)
+          .tickSize(-1420)
+          .tickFormat((d) => d + " m")
+      );
 
     // Add right axis
     svgMap
       .append("g")
-      .attr("transform", `translate(1390, 0)`)
-      .call(d3.axisRight(yScale).tickFormat(d => d + " cm"));
+      .attr("transform", `translate(1390, 0)`) // Set the axis to be 30px away from the map
+      .call(
+        d3
+          .axisRight(yScale)
+          .ticks(14)
+          .tickFormat((d) => d + " m")
+      );
 
-    // Set the font size for the ticks
+    // Set the font size, font weight and colour for the ticks
     svgMap
       .selectAll("text")
       .style("font-size", "14px")
@@ -82,13 +128,7 @@ const MapArea: FC<MapAreaInterface> = ({
       .style("fill", "#696969");
   }, [width, height]);
 
-  return (
-    <svg
-      ref={svgMapRef}
-      width="100%"
-      height="500px"
-    />
-  );
+  return <svg ref={svgMapRef} width="100%" height="500px" />;
 };
 
 export default MapArea;
