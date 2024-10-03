@@ -7,7 +7,7 @@ function leastSquaresTrilateration(gateways, distances) {
     gateways.reduce((sum, g) => sum + g[1], 0) / gateways.length,
   ];
 
-  // Define the objective function (similar to the MATLAB code)
+  // Define the objective function
   const objectiveFunction = (p) => {
     let errorSum = 0;
     for (let i = 0; i < gateways.length; i++) {
@@ -24,4 +24,4 @@ function leastSquaresTrilateration(gateways, distances) {
   return solution.solution; // This will give the estimated position [x, y]
 }
 
-module.exports = leastSquaresTrilateration;
+module.exports = { leastSquaresTrilateration };
