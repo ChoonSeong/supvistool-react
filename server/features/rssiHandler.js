@@ -1,3 +1,5 @@
+const { estimateDistanceForGateway } = require("./logDistance");
+
 // Focuses on processing RSSI data
 let rssiData = {};
 
@@ -30,6 +32,7 @@ function extractRssiData(jsonData, gateway) {
     }
 
     gatewayInfo.averageRssi = calculateAverageRssi(gatewayInfo.rssiValues);
+    gatewayInfo.distance = estimateDistanceForGateway(gateway, gatewayInfo.averageRssi);
     gatewayInfo.lastUpdated = timeStamp;
   });
 }

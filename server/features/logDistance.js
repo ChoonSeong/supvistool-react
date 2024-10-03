@@ -69,3 +69,5 @@ function estimateDistanceForGateway(gatewayId, rssiMeasured) {
   // Using the rearranged path loss model formula
   return Math.pow(10, (rssi0 - rssiMeasured) / (10 * pathLossExponent));
 }
+
+module.exports = { estimateDistanceForGateway };
