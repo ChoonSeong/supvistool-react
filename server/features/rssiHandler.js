@@ -1,4 +1,12 @@
 const { estimateDistanceForGateway } = require("./logDistance");
+const { leastSquaresTrilateration } = require("./leastSquareTrilateration");
+
+// Predefined coordinates of gateways (e.g., (x, y) positions)
+const gatewayCoordinates = {
+  "ac233ffb3adc": [5.264, 0], // Gateway 1 position
+  "ac233fc17756": [3.15, 6.83], // Gateway 2 position
+  "ac233ffb3adb": [13.6, 0],  // Gateway 3 position
+};
 
 // Focuses on processing RSSI data
 let rssiData = {};
@@ -35,13 +43,39 @@ function extractRssiData(jsonData, gateway) {
     gatewayInfo.distance = estimateDistanceForGateway(gateway, gatewayInfo.averageRssi);
     gatewayInfo.lastUpdated = timeStamp;
   });
+
+  // Perform trilateration after updating RSSI data
+  performTrilateration();
+}
+
+function performTrilateration() {
+  for (const mac in rssiData) {
+    const gateways = rssiData[mac].gateways;
+
+    // Prepare gateways and distances arrays for trilateration
+    const gatewayCoords = [];
+    const distances = [];
+
+    for (const gatewayId in gateways) {
+      if (gatewayCoordinates[gatewayId]) {
+        gatewayCoords.push(gatewayCoordinates[gatewayId]);    // Push gateway coordinates [x, y]
+        distances.push(gateways[gatewayId].distance);         // Push the calculated distance
+      }
+    }
+
+    if (gatewayCoords.length >= 3 && distances.length >= 3) { // Need at least 3 gateways for trilateration
+      const estimatedPosition = leastSquaresTrilateration(gatewayCoords, distances);
+      rssiData[mac].position = { x: estimatedPosition[0], y: estimatedPosition[1] };
+    } else {
+      rssiData[mac].position = { x: null, y: null };  // Insufficient data for trilateration
+    }
+  }
 }
 
 function getRssiData() {
   const dataToReturn = JSON.parse(JSON.stringify(rssiData));
 
   for (const mac in dataToReturn) {
-    // Retrieve each tag's gateways
     const gateways = dataToReturn[mac].gateways;
 
     // Log just the tag (mac address) without the timestamp
