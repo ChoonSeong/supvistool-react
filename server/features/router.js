@@ -1,47 +1,24 @@
 const express = require("express");
 const router = express.Router();
+const leastSquaresTrilateration = require("./leastSquareTrilateration");
 
-const gateway1Data = [
-  [
-    { gateway: "ac233ffb3adb", timestamp: "2024-09-03T08:57:19.356Z" },
-    {
-      mac: "c3000021be19",
-      timestamp: "2024-09-03T08:57:19.658Z",
-      rssi: -49,
-      raw: "0201061aff4c000215e2c56db5dffb48d2b060d0f5a71096e000000000c5",
-    },
-  ],
-  [
-    { gateway: "ac233ffb3adb", timestamp: "2024-09-03T08:57:20.355Z" },
-    {
-      mac: "c3000021be19",
-      timestamp: "2024-09-03T08:57:20.658Z",
-      rssi: -55,
-      raw: "0201061aff4c000215e2c56db5dffb48d2b060d0f5a71096e000000000c5",
-    },
-  ],
-];
+// API endpoint to estimate position
+router.post("/estimate-position", (req, res) => {
+  const { gateways } = req.body;
 
-function combineGatewayData(data) {
-  const combinedData = data.map((entry) => {
-    const gatewayInfo = entry[0];
-    const deviceInfo = entry.slice(1);
+  if (!gateways || gateways.length === 0) {
+    return res.status(400).json({ error: "Invalid input data" });
+  }
 
-    return {
-      gateway: gatewayInfo.gateway,
-      devices: deviceInfo.map((device) => ({
-        mac: device.mac,
-        timestamp: device.timestamp,
-        rssi: device.rssi,
-      })),
-    };
-  });
-  return combinedData;
-}
+  const positions = gateways.map((gateway) => gateway.position);
+  const distances = gateways.map((gateway) => gateway.distance);
 
-router.get("/gateway1", (req, res) => {
-  const combinedData = combineGatewayData(gateway1Data);
-  res.send(combinedData);
+  try {
+    const estimatedPosition = leastSquaresTrilateration(positions, distances);
+    res.json({ position: estimatedPosition });
+  } catch (error) {
+    res.status(500).json({ error: "Error estimating position" });
+  }
 });
 
 module.exports = router;
