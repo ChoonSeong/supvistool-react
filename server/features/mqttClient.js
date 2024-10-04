@@ -61,7 +61,7 @@ function initializeMqttClient() {
     if (gatewayBuffers[gatewayId]) {
       gatewayBuffers[gatewayId].push(JSON.parse(message.toString()));
 
-      if (gatewayBuffers[gatewayId].length === 100) {
+      if (gatewayBuffers[gatewayId].length === 10) {
         saveToFile(gatewayId, gatewayBuffers[gatewayId]); // Save and log after every 100 messages
       }
     }

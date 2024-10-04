@@ -1,10 +1,31 @@
-// Focuses on processing RSSI data
+const KalmanFilter = require('kalmanjs');  // Ensure you have this installed
+
 let rssiData = {};
+const WINDOW_SIZE = 50;  // Sliding window size
 
 function calculateAverageRssi(rssiValues) {
   if (rssiValues.length === 0) return null;
   const sum = rssiValues.reduce((acc, value) => acc + value, 0);
   return sum / rssiValues.length;
+}
+
+function detectOutliers(rssiValues) {
+  const median = rssiValues.sort((a, b) => a - b)[Math.floor(rssiValues.length / 2)];
+  const MAD = rssiValues.reduce((acc, val) => acc + Math.abs(val - median), 0) / rssiValues.length;
+  
+  return rssiValues.filter(rssi => {
+    const modifiedZ = 0.6745 * (rssi - median) / MAD;
+    return Math.abs(modifiedZ) <= 2.5;  // Aggressive outlier detection
+  });
+}
+
+function applyKalmanFilter(rssiValues) {
+  const kalman = new KalmanFilter({ R: 1, Q: 20 });  // Adjusted Kalman filter for more smoothing
+  return rssiValues.map(rssi => kalman.filter(rssi));
+}
+
+function exponentialMovingAverage(previousEMA, newValue, smoothingFactor = 0.05) {
+  return previousEMA === null ? newValue : (smoothingFactor * newValue) + ((1 - smoothingFactor) * previousEMA);
 }
 
 function extractRssiData(jsonData, gateway) {
@@ -19,17 +40,27 @@ function extractRssiData(jsonData, gateway) {
     }
 
     if (!rssiData[macAddress].gateways[gateway]) {
-      rssiData[macAddress].gateways[gateway] = { rssiValues: [], averageRssi: null, distance: null, lastUpdated: null };
+      rssiData[macAddress].gateways[gateway] = { rssiValues: [], filteredRssi: null, distance: null, lastUpdated: null, previousEMA: null };
     }
 
     const gatewayInfo = rssiData[macAddress].gateways[gateway];
-    gatewayInfo.rssiValues.push(rssi);
-
-    if (gatewayInfo.rssiValues.length > 100) {
-      gatewayInfo.rssiValues.shift();
+    
+    // Maintain a sliding window of RSSI values
+    if (gatewayInfo.rssiValues.length >= WINDOW_SIZE) {
+      gatewayInfo.rssiValues.shift();  // Remove the oldest value if window size is exceeded
     }
 
-    gatewayInfo.averageRssi = calculateAverageRssi(gatewayInfo.rssiValues);
+    gatewayInfo.rssiValues.push(rssi);  // Add new RSSI value to the sliding window
+
+    // Perform filtering and averaging continuously
+    let cleanedRssi = detectOutliers(gatewayInfo.rssiValues);
+    let smoothedRssi = applyKalmanFilter(cleanedRssi);
+    let avgRssi = calculateAverageRssi(smoothedRssi);
+
+    // Apply Exponential Moving Average for further smoothing
+    gatewayInfo.filteredRssi = exponentialMovingAverage(gatewayInfo.filteredRssi, avgRssi);
+    gatewayInfo.previousEMA = gatewayInfo.filteredRssi;
+
     gatewayInfo.lastUpdated = timeStamp;
   });
 }
@@ -38,15 +69,10 @@ function getRssiData() {
   const dataToReturn = JSON.parse(JSON.stringify(rssiData));
 
   for (const mac in dataToReturn) {
-    // Retrieve each tag's gateways
     const gateways = dataToReturn[mac].gateways;
-
-    // Log just the tag (mac address) without the timestamp
     console.log(`Tag ${mac} updated.`);
-
-    // Remove raw RSSI values from the data before returning
     for (const gateway in gateways) {
-      delete gateways[gateway].rssiValues;
+      delete gateways[gateway].rssiValues;  // Remove raw RSSI values for clean output
     }
   }
 
