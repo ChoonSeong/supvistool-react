@@ -24,13 +24,20 @@ const distances = [1, 2, 3];
 function calculatePathLoss(gatewayId) {
   const rssi_values_angles = gatewaysRSSI[gatewayId];
 
-  // Calculate average RSSI for each distance
-  const average_rssi_values = rssi_values_angles.map(
-    (arr) => arr.reduce((a, b) => a + b) / arr.length
-  );
+  // Flatten the rssi_values_angles array and create a corresponding distances array
+  const flattenedRSSI = [];
+  const flattenedDistances = [];
+
+  rssi_values_angles.forEach((rssiValues, index) => {
+    const distance = distances[index]; // Corresponding distance for the set of RSSI values
+    rssiValues.forEach((rssi) => {
+      flattenedRSSI.push(rssi);
+      flattenedDistances.push(distance);
+    });
+  });
 
   // Calculate log10 of distances
-  const log_distances = distances.map((distance) => Math.log10(distance));
+  const log_distances = flattenedDistances.map((distance) => Math.log10(distance));
 
   // Perform linear regression using least squares
   function linearRegression(x, y) {
@@ -48,7 +55,7 @@ function calculatePathLoss(gatewayId) {
 
   const { slope, intercept } = linearRegression(
     log_distances,
-    average_rssi_values
+    flattenedRSSI
   );
 
   // Calculate the path loss exponent n
