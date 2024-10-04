@@ -2,6 +2,7 @@ const KalmanFilter = require('kalmanjs');  // Ensure you have this installed
 
 let rssiData = {};
 const WINDOW_SIZE = 50;  // Sliding window size
+const DETECTION_INTERVAL = 20;  // Run outlier detection after 20 new data points
 
 function calculateAverageRssi(rssiValues) {
   if (rssiValues.length === 0) return null;
@@ -12,7 +13,7 @@ function calculateAverageRssi(rssiValues) {
 function detectOutliers(rssiValues) {
   const median = rssiValues.sort((a, b) => a - b)[Math.floor(rssiValues.length / 2)];
   const MAD = rssiValues.reduce((acc, val) => acc + Math.abs(val - median), 0) / rssiValues.length;
-  
+
   return rssiValues.filter(rssi => {
     const modifiedZ = 0.6745 * (rssi - median) / MAD;
     return Math.abs(modifiedZ) <= 2.5;  // Aggressive outlier detection
@@ -21,11 +22,16 @@ function detectOutliers(rssiValues) {
 
 function applyKalmanFilter(rssiValues) {
   const kalman = new KalmanFilter({ R: 1, Q: 20 });  // Adjusted Kalman filter for more smoothing
+  // Apply the Kalman filter to the full sliding window or the last WINDOW_SIZE values
   return rssiValues.map(rssi => kalman.filter(rssi));
 }
 
-function exponentialMovingAverage(previousEMA, newValue, smoothingFactor = 0.05) {
-  return previousEMA === null ? newValue : (smoothingFactor * newValue) + ((1 - smoothingFactor) * previousEMA);
+function adaptiveExponentialMovingAverage(previousEMA, newValue, smoothingFactor = 0.05) {
+  // Adaptive smoothing factor based on the fluctuation in RSSI
+  const fluctuation = Math.abs(newValue - previousEMA);
+  const adjustedSmoothingFactor = fluctuation > 5 ? 0.1 : 0.05; // Example: if fluctuation > 5, increase smoothing
+
+  return previousEMA === null ? newValue : (adjustedSmoothingFactor * newValue) + ((1 - adjustedSmoothingFactor) * previousEMA);
 }
 
 function extractRssiData(jsonData, gateway) {
@@ -36,7 +42,7 @@ function extractRssiData(jsonData, gateway) {
     const timeStamp = new Date(tagInfo.timestamp).toLocaleString();
 
     if (!rssiData[macAddress]) {
-      rssiData[macAddress] = { gateways: {}, position: { x: null, y: null } };
+      rssiData[macAddress] = { gateways: {}, position: { x: null, y: null }, dataCount: 0 }; // Added dataCount
     }
 
     if (!rssiData[macAddress].gateways[gateway]) {
@@ -44,6 +50,7 @@ function extractRssiData(jsonData, gateway) {
     }
 
     const gatewayInfo = rssiData[macAddress].gateways[gateway];
+    const macInfo = rssiData[macAddress];
     
     // Maintain a sliding window of RSSI values
     if (gatewayInfo.rssiValues.length >= WINDOW_SIZE) {
@@ -51,15 +58,22 @@ function extractRssiData(jsonData, gateway) {
     }
 
     gatewayInfo.rssiValues.push(rssi);  // Add new RSSI value to the sliding window
+    macInfo.dataCount++;  // Increment data count for the tag
 
-    // Perform filtering and averaging continuously
-    let cleanedRssi = detectOutliers(gatewayInfo.rssiValues);
-    let smoothedRssi = applyKalmanFilter(cleanedRssi);
-    let avgRssi = calculateAverageRssi(smoothedRssi);
+    // More frequent filtering and outlier detection every 20 new data points
+    if (macInfo.dataCount >= DETECTION_INTERVAL) {
+      // Perform outlier detection and Kalman filtering on the entire window
+      let cleanedRssi = detectOutliers(gatewayInfo.rssiValues);
+      let smoothedRssi = applyKalmanFilter(cleanedRssi);  // Filter the entire sliding window
+      let avgRssi = calculateAverageRssi(smoothedRssi);  // Average the filtered values
 
-    // Apply Exponential Moving Average for further smoothing
-    gatewayInfo.filteredRssi = exponentialMovingAverage(gatewayInfo.filteredRssi, avgRssi);
-    gatewayInfo.previousEMA = gatewayInfo.filteredRssi;
+      // Apply adaptive Exponential Moving Average for further smoothing
+      gatewayInfo.filteredRssi = adaptiveExponentialMovingAverage(gatewayInfo.filteredRssi, avgRssi);
+      gatewayInfo.previousEMA = gatewayInfo.filteredRssi;
+
+      // Reset the data count after running the outlier detection and filtering
+      macInfo.dataCount = 0;
+    }
 
     gatewayInfo.lastUpdated = timeStamp;
   });
