@@ -37,9 +37,6 @@ function applyKalmanFilter(rssiValues) {
   return rssiValues.map(rssi => kalman.filter(rssi));
 }
 
-function exponentialMovingAverage(previousEMA, newValue, smoothingFactor = 0.1) {
-  return previousEMA === null ? newValue : (smoothingFactor * newValue) + ((1 - smoothingFactor) * previousEMA);
-}
 
 async function processRssiDataBatch(tagData) {
   for (let gateway in tagData.gateways) {
@@ -64,9 +61,7 @@ async function processRssiDataBatch(tagData) {
       continue;
     }
 
-    // Apply Exponential Moving Average for further smoothing
-    gatewayInfo.filteredRssi = exponentialMovingAverage(gatewayInfo.filteredRssi, avgRssi);
-    gatewayInfo.previousEMA = gatewayInfo.filteredRssi;
+    gatewayInfo.filteredRssi = avgRssi
 
     if (gatewayInfo.filteredRssi !== null) {
       gatewayInfo.distance = estimateDistanceForGateway(gateway, gatewayInfo.filteredRssi);
@@ -108,7 +103,6 @@ function extractRssiData(jsonData) {
           filteredRssi: null,
           distance: null,
           lastUpdated: null,
-          previousEMA: null,
         };
       }
 
