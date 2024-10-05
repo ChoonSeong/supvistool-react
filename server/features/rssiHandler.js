@@ -28,9 +28,22 @@ function detectOutliers(rssiValues) {
   });
 }
 
-// Applies Kalman filter to smooth RSSI values
-function applyKalmanFilter(rssiValues) {
-  const kalman = new KalmanFilter({ R: 1, Q: 20 });
+// Applies a dynamic Kalman filter based on RSSI variance and recent distance changes
+function applyDynamicKalmanFilter(rssiValues, gatewayInfo) {
+  // Calculate RSSI variance as a measure of noise
+  const meanRssi = calculateAverageRssi(rssiValues);
+  const variance = rssiValues.reduce((acc, rssi) => acc + Math.pow(rssi - meanRssi, 2), 0) / rssiValues.length;
+
+  // Dynamically adjust R based on RSSI variance (higher variance = noisier signal)
+  let R = variance > 15 ? 5 : 1;
+
+  // Adjust Q based on recent distance changes (faster changes = more responsive filter)
+  let recentDistanceChange = Math.abs(gatewayInfo.previousDistance - gatewayInfo.distance || 0);
+  let Q = recentDistanceChange > 2 ? 25 : 10;
+
+  const kalman = new KalmanFilter({ R, Q });
+
+  // Apply the Kalman filter to all RSSI values in the window
   return rssiValues.map(rssi => kalman.filter(rssi));
 }
 
@@ -46,9 +59,15 @@ async function processRssiDataBatch(tagData) {
     let cleanedRssi = detectOutliers(gatewayInfo.rssiValues);
     if (cleanedRssi.length === 0) continue;
 
-    let smoothedRssi = applyKalmanFilter(cleanedRssi);
+    let smoothedRssi = applyDynamicKalmanFilter(cleanedRssi, gatewayInfo);
     let avgRssi = calculateAverageRssi(smoothedRssi);
     if (avgRssi === null) continue;
+
+    // Store the previous distance before updating it
+    gatewayInfo.previousDistance = gatewayInfo.distance;
+
+    // Store the filtered RSSI for output
+    gatewayInfo.filteredRSSI = avgRssi;
 
     gatewayInfo.distance = estimateDistanceForGateway(gateway, avgRssi);
     gatewayInfo.lastUpdated = new Date().toLocaleString();
@@ -75,8 +94,10 @@ function extractRssiData(jsonData) {
       if (!rssiData[macAddress].gateways[gatewayId]) {
         rssiData[macAddress].gateways[gatewayId] = {
           rssiValues: [],
+          filteredRSSI: null,
           distance: null,
           lastUpdated: null,
+          previousDistance: null,
         };
       }
 
@@ -121,14 +142,17 @@ async function performTrilateration() {
   }
 }
 
+// Returns the RSSI data with filteredRSSI, distance, previousDistance, and lastUpdated fields
 function getRssiData() {
   const dataToReturn = JSON.parse(JSON.stringify(rssiData));
+
   for (const mac in dataToReturn) {
     const gateways = dataToReturn[mac].gateways;
     for (const gateway in gateways) {
-      delete gateways[gateway].rssiValues;
+      delete gateways[gateway].rssiValues; // Remove rssiValues but keep filteredRSSI, distance, etc.
     }
   }
+
   return dataToReturn;
 }
 
