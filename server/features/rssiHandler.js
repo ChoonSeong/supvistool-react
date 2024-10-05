@@ -82,30 +82,69 @@ async function processRssiDataBatch(tagData) {
   await performTrilateration();
 }
 
-function extractRssiData(jsonData, gateway) {
+function extractRssiData(jsonData) {
+  // First loop: Store RSSI data for each gateway and its associated tags
   jsonData.forEach((entry) => {
-    const tagInfo = entry[1];
-    const macAddress = tagInfo.mac;
-    const rssi = tagInfo.rssi;
+    const gatewayInfo = entry[0];  // The first element is the gateway info
+    const gatewayId = gatewayInfo.gateway;  // Extract the gateway ID
 
-    if (!rssiData[macAddress]) {
-      rssiData[macAddress] = { gateways: {}, position: { x: null, y: null } };
+    console.log(`Processing data from gateway: ${gatewayId}`);
+
+    // Iterate over the remaining elements, which are the tag readings
+    for (let i = 1; i < entry.length; i++) {
+      const tagInfo = entry[i];  // Extract each tag's info
+      const macAddress = tagInfo.mac;
+      const rssi = tagInfo.rssi;
+
+      // Initialize the storage for the tag if it doesn't exist
+      if (!rssiData[macAddress]) {
+        rssiData[macAddress] = { gateways: {}, position: { x: null, y: null } };
+      }
+
+      // Initialize the gateway-specific info for this tag
+      if (!rssiData[macAddress].gateways[gatewayId]) {
+        rssiData[macAddress].gateways[gatewayId] = {
+          rssiValues: [],
+          filteredRssi: null,
+          distance: null,
+          lastUpdated: null,
+          previousEMA: null,
+        };
+      }
+
+      const gatewayInfoForTag = rssiData[macAddress].gateways[gatewayId];
+
+      // Maintain a sliding window of RSSI values (use shift to remove the oldest value)
+      if (gatewayInfoForTag.rssiValues.length >= WINDOW_SIZE) {
+        gatewayInfoForTag.rssiValues.shift();  // Remove the oldest RSSI value
+      }
+
+      // Add new RSSI value to the sliding window
+      gatewayInfoForTag.rssiValues.push(rssi);
+
+      // Update the lastUpdated timestamp
+      gatewayInfoForTag.lastUpdated = new Date(tagInfo.timestamp).toISOString();
+
+      // Optional: Logging every 10 tags for debugging (can be removed in production)
+      if (i % 10 === 0 || i === entry.length - 1) {
+        console.log(`Updated tag ${macAddress} from gateway ${gatewayId} with RSSI: ${rssi}`);
+      }
     }
-
-    if (!rssiData[macAddress].gateways[gateway]) {
-      rssiData[macAddress].gateways[gateway] = { rssiValues: [], filteredRssi: null, distance: null, lastUpdated: null, previousEMA: null };
-    }
-
-    const gatewayInfo = rssiData[macAddress].gateways[gateway];
-    gatewayInfo.rssiValues.push(rssi);  // Add new RSSI value to the sliding window
   });
 
-  // Process data for the entire batch asynchronously
-  jsonData.forEach((entry) => {
-    const macAddress = entry[1].mac;
-    processRssiDataBatch(rssiData[macAddress]);  // Process each tag's RSSI data asynchronously
+  // Second loop: Process RSSI data for each tag asynchronously
+  jsonData.forEach(async (entry) => {
+    // Iterate over the tag readings (skip the first element which is gateway info)
+    for (let i = 1; i < entry.length; i++) {
+      const macAddress = entry[i].mac;
+
+      // Process each tag's RSSI data asynchronously using a batch processor
+      await processRssiDataBatch(rssiData[macAddress]);
+    }
   });
 }
+
+
 
 async function performTrilateration() {
   for (const mac in rssiData) {
