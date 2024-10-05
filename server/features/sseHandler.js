@@ -1,6 +1,6 @@
-// sseHandler.js
 let clients = [];
 
+// Registers a client for SSE updates
 function registerClient(req, res) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -14,8 +14,8 @@ function registerClient(req, res) {
   });
 }
 
+// Notifies all connected clients about data updates
 function notifyClients() {
-  //console.log('Notifying clients'); // Debugging log
   clients.forEach(client => client.write(`data: updated\n\n`));
 }
 

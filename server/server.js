@@ -14,21 +14,20 @@ app.use("/", router);
 mqttClient.initializeMqttClient();
 fileProcessor.readAndWatchFiles();
 
-// SSE route
+// SSE route to send updates to clients
 app.get('/events', sseHandler.registerClient);
 
 // RSSI Data API route
 app.get('/data', (req, res) => {
   const data = rssiHandler.getRssiData();
-
   if (!data) {
     res.status(500).send('No data available');
   } else {
-    res.json(data);  // Serve JSON data for the client to fetch
+    res.json(data); // Serve JSON data for the client to fetch
   }
 });
 
-// Serving a basic HTML page with dynamic content update
+// Serves a basic HTML page to view data
 app.get('/view-data', (req, res) => {
   res.send(`
     <h1>Data Storage</h1>
@@ -39,9 +38,6 @@ app.get('/view-data', (req, res) => {
         margin: 0;
         padding: 20px;
       }
-      h1 {
-        color: #333;
-      }
       pre {
         background: #fff;
         padding: 10px;
@@ -51,7 +47,6 @@ app.get('/view-data', (req, res) => {
     </style>
     <pre id="data-container">Loading data...</pre>
     <script>
-      // Function to fetch data from the server
       function fetchData() {
         fetch('/data')
           .then(response => response.json())
@@ -60,20 +55,14 @@ app.get('/view-data', (req, res) => {
           })
           .catch(error => {
             document.getElementById('data-container').innerText = 'Error fetching data';
-            console.error('Error:', error);
           });
       }
 
-      // Fetch data immediately on page load
-      fetchData();
+      fetchData(); // Fetch data on page load
 
-      // Use Server-Sent Events (SSE) to listen for updates
       const eventSource = new EventSource('/events');
-      eventSource.onmessage = (event) => {
-        if (event.data === 'updated') {
-          console.log('Data updated, fetching new data...');
-          fetchData(); // Fetch new data when notified by SSE
-        }
+      eventSource.onmessage = () => {
+        fetchData(); // Fetch new data when notified
       };
     </script>
   `);

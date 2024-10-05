@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// mqttClient.js
 const mqtt = require("mqtt");
 const fs = require("fs");
 const path = require("path");
@@ -36,7 +35,7 @@ const topics = [
   "/gw/ac233ffb3adc/status",
 ];
 
-// Function to save buffered messages to a file
+// Saves buffered messages to a file and clears the buffer
 function saveToFile(gatewayId, buffer) {
   const dataDir = path.join(__dirname, '..', 'data');
   if (!fs.existsSync(dataDir)) {
@@ -45,41 +44,42 @@ function saveToFile(gatewayId, buffer) {
   const filename = path.join(dataDir, `${gatewayId}_data.json`);
 
   fs.writeFile(filename, JSON.stringify(buffer, null, 2), (err) => {
-    if (err) throw err;
-    console.log(`Saved 100 messages for gateway ${gatewayId}`); // Only log once every 100 messages
+    if (err) {
+      console.error(`Error saving data for gateway ${gatewayId}`, err);
+      return;
+    }
     gatewayBuffers[gatewayId] = [];
   });
 }
 
-// Initialize MQTT client
+// Initializes the MQTT client and subscribes to topics
 function initializeMqttClient() {
   const client = mqtt.connect("tls://194f6ad3ec394491959182c6d30a59ef.s1.eu.hivemq.cloud:8883", options);
 
   client.on("message", (topic, message) => {
     const gatewayId = topic.split("/")[2];
-
     if (gatewayBuffers[gatewayId]) {
       gatewayBuffers[gatewayId].push(JSON.parse(message.toString()));
 
       if (gatewayBuffers[gatewayId].length === 10) {
-        saveToFile(gatewayId, gatewayBuffers[gatewayId]); // Save and log after every 100 messages
+        saveToFile(gatewayId, gatewayBuffers[gatewayId]);
       }
     }
   });
 
   client.on("connect", () => {
-    console.log("Connected to HiveMQ!"); // Keep only key logs
+    console.log("Connected to HiveMQ!");
     topics.forEach((topic) => {
       client.subscribe(topic, (err) => {
         if (err) {
-          console.log(`Failed to subscribe to ${topic}:`, err);
+          console.error(`Failed to subscribe to ${topic}:`, err);
         }
       });
     });
   });
 
   client.on("error", (error) => {
-    console.log("MQTT Error:", error); // Log errors only
+    console.error("MQTT Error:", error);
   });
 }
 
