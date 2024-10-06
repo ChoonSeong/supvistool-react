@@ -1,31 +1,55 @@
-import React, { useEffect, useRef, FC } from "react";
-import { Coordinates } from "../../interface/Markers";
+import React, { useEffect, useRef, useState, FC } from "react";
+import AssetTrackerGenerator from "../../util/AssetTrackerGenerator";
+import AssetData from "../../interface/AssetData";
 import * as d3 from "d3";
 
-interface MapAreaInterface {
-  width: number;
-  height: number;
-  gridSize: number;
-  markers: Coordinates[];
-}
-
-const MapArea: FC<MapAreaInterface> = ({
-  width,
-  height,
-  gridSize,
-  markers,
-}) => {
-  const svgMapRef = useRef(null);
+const MapArea = (props: {}) => {
+  const [assetDataArr, setAssetDataArray] = useState<AssetData[]>([
+    {
+      asset_id: "a_1",
+      asset_desc: "Blood Type: A",
+      asset_cat: "P",
+      asset_loc: { x: 5, y: 5 },
+      asset_qty: 10,
+      asset_exp_date: "1/2/2025",
+    },
+    {
+      asset_id: "a_2",
+      asset_desc: "Company A Hospital Bed. Code: 1234",
+      asset_cat: "F",
+      asset_loc: { x: 3, y: 6 },
+      asset_qty: 1,
+      asset_exp_date: null,
+    },
+    {
+      asset_id: "a_3",
+      asset_desc: "Infusion Pumps",
+      asset_cat: "M",
+      asset_loc: { x: 10, y: 1 },
+      asset_qty: 1,
+      asset_exp_date: "1/2/2025",
+    },
+    {
+      asset_id: "a_4",
+      asset_desc: "Company B Wheelchair. Code: 5678",
+      asset_cat: "F",
+      asset_loc: { x: 7, y: 1 },
+      asset_qty: 1,
+      asset_exp_date: null,
+    },
+  ]);
+  const svgMapRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
+    if (!svgMapRef.current) return;
     // Creates the d3 map svg object by accessing the DOM object directly (with its ref)
-    const svgMap = d3.select(svgMapRef.current);
+    const svgMap = d3.select<SVGSVGElement, unknown>(svgMapRef.current);
 
     // Clears existing content in case of rerenders
     svgMap.selectAll("*").remove();
 
     // Set the viewBox to match the drawing area
-    svgMap.attr("viewBox", `-100 -100 1560 883`);
+    svgMap.attr("viewBox", `-100 -100 1460 883`);
 
     // Define points of the inner polygon (inner walls)
     const innerPolygonPoints = [
@@ -125,8 +149,12 @@ const MapArea: FC<MapAreaInterface> = ({
       .selectAll("text")
       .style("font-size", "14px")
       .style("font-weight", "bold")
-      .style("fill", "#696969");
-  }, [width, height]);
+      .style("fill", "#696969")
+      .style("cursor", "default");
+
+    // --- Markers ---
+    AssetTrackerGenerator({ assetDataArr, svgMap });
+  }, []);
 
   return <svg ref={svgMapRef} width="100%" height="500px" />;
 };

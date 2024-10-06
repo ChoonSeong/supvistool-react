@@ -1,29 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import MapArea from '../components/MapArea/MapArea.tsx';
+import MapArea from '../components/MapArea/MapArea';
 
 export default function Dashboard() {
-  const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
-
-  useEffect(() => {
-    const handleResize = () => {
-      // Update width and height based on the parent container
-      setDimensions({
-        width: window.innerWidth * 0.8,  // Example to take 80% of the screen width
-        height: window.innerHeight * 0.7, // Example to take 70% of the screen height
-      });
-    };
-
-    // Set initial size
-    handleResize();
-
-    // Add event listener to resize dynamically
-    window.addEventListener('resize', handleResize);
-
-    // Clean up the event listener on component unmount
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
@@ -44,7 +22,7 @@ export default function Dashboard() {
           {/* Map area */}
           <div className="flex-1 bg-white rounded-lg shadow">
             <div className="h-full p-4 flex items-center justify-center text-gray-400">
-              <MapArea width={dimensions.width} height={dimensions.height} gridSize={10} markers={[{x: 1, y: 2}, {x: 3, y: 4}]}/>
+              <MapArea/>
             </div>
           </div>
         </div>
