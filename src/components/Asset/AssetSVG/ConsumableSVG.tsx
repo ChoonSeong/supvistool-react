@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
 
-function ConsumableSVG(props: {}) {
+interface ConsumableSVGInterface {
+  svgClassName: string;
+}
+
+function ConsumableSVG({svgClassName} : ConsumableSVGInterface) {
   return (
     <svg
       fill="white"
@@ -9,6 +13,7 @@ function ConsumableSVG(props: {}) {
       height="50"
       viewBox="-100 -100 200 200"
       opacity="0.8"
+      className={svgClassName}
     >
       {/* Background Circle */}
       <circle cx="0" cy="0" r="100" fill="#4682B4" />
@@ -57,6 +62,6 @@ function ConsumableSVG(props: {}) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderConsumableSVG(props: {}) {
-  return ReactDOMServer.renderToStaticMarkup(<ConsumableSVG {...props} />);
+export function renderConsumableSVG({svgClassName} : ConsumableSVGInterface) {
+  return ReactDOMServer.renderToStaticMarkup(<ConsumableSVG svgClassName={svgClassName} />);
 }

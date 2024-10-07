@@ -33,7 +33,7 @@ const MapArea = (props: {}) => {
       asset_id: "a_4",
       asset_desc: "Company B Wheelchair. Code: 5678",
       asset_cat: "F",
-      asset_loc: { x: 7, y: 1 },
+      asset_loc: { x: 6.7, y: 1 },
       asset_qty: 1,
       asset_exp_date: null,
     },
@@ -154,7 +154,12 @@ const MapArea = (props: {}) => {
 
     // --- Markers ---
     AssetTrackerGenerator({ assetDataArr, svgMap });
-  }, []);
+
+    svgMap.selectAll("svg") // or select a more specific element
+  .on("mouseover", function () {
+    console.log("Mouse over event triggered!");
+  });
+  }, [assetDataArr, svgMapRef]);
 
   return <svg ref={svgMapRef} width="100%" height="500px" />;
 };
