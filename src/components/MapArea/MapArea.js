@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, FC } from "react";
 import AssetTrackerGenerator from "../../util/AssetTrackerGenerator";
-import AssetData from "../../interface/AssetData";
 import * as d3 from "d3";
 
 const MapArea = (/*props: {}*/) => {
