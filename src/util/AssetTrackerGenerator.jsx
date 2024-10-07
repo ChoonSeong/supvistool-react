@@ -6,13 +6,13 @@ import { renderPharmaceuticalSVG } from "../components/Asset/AssetSVG/Pharmaceut
 import { renderGatewaySVG } from '../components/Asset/AssetSVG/GatewaySVG';
 import * as d3 from "d3";
 
-interface AssetTrackerInterface {
-  assetDataArr: AssetData[];
-  svgMap: d3.Selection<SVGSVGElement, unknown, null, undefined>
-}
+// interface AssetTrackerInterface {
+//   assetDataArr: AssetData[];
+//   svgMap: d3.Selection<SVGSVGElement, unknown, null, undefined>
+// }
 
-const  AssetTrackerGenerator = ({ assetDataArr, svgMap }: AssetTrackerInterface): void => {
-  let new_x: number, new_y: number, asset_id: string;
+const  AssetTrackerGenerator = ({ assetDataArr, svgMap }/*: AssetTrackerInterface*/)/*: void*/ => {
+  let new_x/*: number*/, new_y/*: number*/, asset_id/*: string*/;
 
   for (const asset of assetDataArr){
     new_x = asset.asset_loc.x * 100 - 25; // X position

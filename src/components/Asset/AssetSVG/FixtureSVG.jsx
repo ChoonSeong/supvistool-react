@@ -1,12 +1,12 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // For static markup rendering
 
-interface FixtureSVGInterface {
-  svgClassName: string;
-}
+// interface FixtureSVGInterface {
+//   svgClassName: string;
+// }
 
 // SVG component
-function FixtureSVG({svgClassName} : FixtureSVGInterface) {
+function FixtureSVG({svgClassName} /*: FixtureSVGInterface*/) {
   return (
     <svg
       fill="white"
@@ -28,6 +28,6 @@ function FixtureSVG({svgClassName} : FixtureSVGInterface) {
 }
 
 // Function to render as an SVG string
-export function renderFixtureSVG({svgClassName} : FixtureSVGInterface) {
+export function renderFixtureSVG({svgClassName} /*: FixtureSVGInterface*/) {
   return ReactDOMServer.renderToStaticMarkup(<FixtureSVG svgClassName={svgClassName} />);
 }

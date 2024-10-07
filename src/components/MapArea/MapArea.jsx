@@ -3,8 +3,8 @@ import AssetTrackerGenerator from "../../util/AssetTrackerGenerator";
 import AssetData from "../../interface/AssetData";
 import * as d3 from "d3";
 
-const MapArea = (props: {}) => {
-  const [assetDataArr, setAssetDataArray] = useState<AssetData[]>([
+const MapArea = (/*props: {}*/) => {
+  const [assetDataArr, setAssetDataArray] = useState/*<AssetData[]>*/([
     {
       asset_id: "a_1",
       asset_desc: "Blood Type: A",
@@ -46,12 +46,12 @@ const MapArea = (props: {}) => {
       asset_exp_date: null,
     },
   ]);
-  const svgMapRef = useRef<SVGSVGElement | null>(null);
+  const svgMapRef = useRef/*<SVGSVGElement | null>*/(null);
 
   useEffect(() => {
     if (!svgMapRef.current) return;
     // Creates the d3 map svg object by accessing the DOM object directly (with its ref)
-    const svgMap = d3.select<SVGSVGElement, unknown>(svgMapRef.current);
+    const svgMap = d3.select/*<SVGSVGElement, unknown>*/(svgMapRef.current);
 
     // Clears existing content in case of rerenders
     svgMap.selectAll("*").remove();
@@ -163,10 +163,10 @@ const MapArea = (props: {}) => {
     // --- Markers ---
     AssetTrackerGenerator({ assetDataArr, svgMap });
 
-    svgMap.selectAll("svg") // or select a more specific element
-  .on("mouseover", function () {
-    console.log("Mouse over event triggered!");
-  });
+    return () => {
+      // Cleanup D3 event listeners or any other DOM manipulations if necessary.
+      svgMap.selectAll("*").remove();
+    };
   }, [assetDataArr, svgMapRef]);
 
   return <svg ref={svgMapRef} width="100%" height="500px" />;

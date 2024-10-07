@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
 
-interface ConsumableSVGInterface {
-  svgClassName: string;
-}
+// interface ConsumableSVGInterface {
+//   svgClassName: string;
+// }
 
-function ConsumableSVG({svgClassName} : ConsumableSVGInterface) {
+function ConsumableSVG({svgClassName}/* : ConsumableSVGInterface*/) {
   return (
     <svg
       fill="white"
@@ -62,6 +62,6 @@ function ConsumableSVG({svgClassName} : ConsumableSVGInterface) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderConsumableSVG({svgClassName} : ConsumableSVGInterface) {
+export function renderConsumableSVG({svgClassName} /*: ConsumableSVGInterface*/) {
   return ReactDOMServer.renderToStaticMarkup(<ConsumableSVG svgClassName={svgClassName} />);
 }

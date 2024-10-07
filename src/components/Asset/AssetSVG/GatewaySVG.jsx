@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
 
-interface GatewaySVGInterface {
-  svgClassName: string;
-}
+// interface GatewaySVGInterface {
+//   svgClassName: string;
+// }
 
-function GatewaySVG({ svgClassName }: GatewaySVGInterface) {
+function GatewaySVG({ svgClassName }/*: GatewaySVGInterface*/) {
   return (
     <svg
       fill="white"
@@ -26,7 +26,7 @@ function GatewaySVG({ svgClassName }: GatewaySVGInterface) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderGatewaySVG({ svgClassName }: GatewaySVGInterface) {
+export function renderGatewaySVG({ svgClassName }/*: GatewaySVGInterface*/) {
   return ReactDOMServer.renderToStaticMarkup(
     <GatewaySVG svgClassName={svgClassName} />
   );

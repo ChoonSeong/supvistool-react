@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
 
-interface MedicalEquipmentSVGInterface {
-  svgClassName: string;
-}
+// interface MedicalEquipmentSVGInterface {
+//   svgClassName: string;
+// }
 
-function MedicalEquipmentSVG ({svgClassName} : MedicalEquipmentSVGInterface) {
+function MedicalEquipmentSVG ({svgClassName}/* : MedicalEquipmentSVGInterface*/) {
   return (
     <>
       <svg
@@ -47,7 +47,7 @@ function MedicalEquipmentSVG ({svgClassName} : MedicalEquipmentSVGInterface) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderMedicalEquipmentSVG({svgClassName} : MedicalEquipmentSVGInterface) {
+export function renderMedicalEquipmentSVG({svgClassName}/* : MedicalEquipmentSVGInterface*/) {
   return ReactDOMServer.renderToStaticMarkup(
     <MedicalEquipmentSVG svgClassName={svgClassName} />
   );
