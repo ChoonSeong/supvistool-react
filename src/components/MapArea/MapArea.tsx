@@ -37,6 +37,14 @@ const MapArea = (props: {}) => {
       asset_qty: 1,
       asset_exp_date: null,
     },
+    {
+      asset_id: "a_5",
+      asset_desc: "MineW_1234",
+      asset_cat: "G",
+      asset_loc: { x: 4.7, y: 1 },
+      asset_qty: 1,
+      asset_exp_date: null,
+    },
   ]);
   const svgMapRef = useRef<SVGSVGElement | null>(null);
 

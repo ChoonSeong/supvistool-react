@@ -3,6 +3,7 @@ import { renderMedicalEquipmentSVG } from "../components/Asset/AssetSVG/MedicalE
 import { renderFixtureSVG } from "../components/Asset/AssetSVG/FixtureSVG";
 import { renderConsumableSVG } from "../components/Asset/AssetSVG/ConsumableSVG";
 import { renderPharmaceuticalSVG } from "../components/Asset/AssetSVG/PharmaceuticalSVG";
+import { renderGatewaySVG } from '../components/Asset/AssetSVG/GatewaySVG';
 import * as d3 from "d3";
 
 interface AssetTrackerInterface {
@@ -133,6 +134,34 @@ const  AssetTrackerGenerator = ({ assetDataArr, svgMap }: AssetTrackerInterface)
           console.log(`Mouse out from ${currentClassName}`);
         });
         break;
+
+        case "G":
+          iconGroup.html(renderGatewaySVG({ svgClassName: `${asset_id}-[${asset.asset_loc.x},${asset.asset_loc.y}]` }))
+          .on('mouseover', function () {
+            // Change the color of the SVG fill on mouseover based on class name
+            const currentClassName = d3.select(this).select("svg").attr("class");
+            d3.select(this).select("circle").style("fill", "#006666");
+            console.log(`Mouse over on ${currentClassName}`);
+          })
+          .on('mouseout', function () {
+            // Reset the color when the mouse leaves
+            const currentClassName = d3.select(this).select("svg").attr("class");
+            d3.select(this).select("circle").style("fill", "#008080"); // Reset to original color
+            console.log(`Mouse out from ${currentClassName}`);
+          })
+          .on('mousedown', function () {
+            // Reset the color when the mouse leaves
+            const currentClassName = d3.select(this).select("svg").attr("class");
+            d3.select(this).select("circle").style("fill", "#004C4C");
+            console.log(`Mouse out from ${currentClassName}`);
+          })
+          .on('mouseup', function () {
+            // Reset the color when the mouse leaves
+            const currentClassName = d3.select(this).select("svg").attr("class");
+            d3.select(this).select("circle").style("fill", "#006666"); // Reset to hovering color
+            console.log(`Mouse out from ${currentClassName}`);
+          });
+          break;
     }
   }
 }
