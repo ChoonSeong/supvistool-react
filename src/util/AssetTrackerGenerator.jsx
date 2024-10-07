@@ -16,7 +16,7 @@ const  AssetTrackerGenerator = ({ assetDataArr, svgMap }/*: AssetTrackerInterfac
 
   for (const asset of assetDataArr){
     new_x = asset.asset_loc.x * 100 - 25; // X position
-    new_y = asset.asset_loc.y * 100 - 25; // Y position
+    new_y = 683 - (asset.asset_loc.y * 100) - 25; // Y position
     asset_id = asset.asset_id;
 
   // Create a group to hold the SVG

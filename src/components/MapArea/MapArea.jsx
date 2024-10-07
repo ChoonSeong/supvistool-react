@@ -104,7 +104,7 @@ const MapArea = (/*props: {}*/) => {
     // --- Axes ---
     // Create scales for the x and y axes
     const xScale = d3.scaleLinear().domain([0, 13.6]).range([0, 1360]);
-    const yScale = d3.scaleLinear().domain([0, 6.83]).range([0, 683]);
+    const yScale = d3.scaleLinear().domain([0, 6.83]).range([683, 0]);
 
     // Add bottom axis
     svgMap
