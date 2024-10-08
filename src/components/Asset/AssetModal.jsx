@@ -26,27 +26,22 @@ const AssetModal = ({ asset, onClose }) => {
           
           {/* Right side (info) */}
           <div className="w-2/3 bg-gray-50 p-4 rounded-lg">
-            <p className="text-gray-600">
-              <span className="font-semibold">Asset ID:</span> {asset.asset_id}
-            </p>
-            <p className="text-gray-600">
-              <span className="font-semibold">Category:</span> {AssetCategoryTranslator(asset.asset_cat, false)}
-            </p>
-            <p className="text-gray-600">
-              <span className="font-semibold">Quantity:</span> {asset.asset_qty}
-            </p>
-            <p className="text-gray-600">
-              <span className="font-semibold">Expiry Date:</span> {asset.asset_exp_date || "None"}
-            </p>
-          </div>
-        </div>
-
-        {/* Asset description */}
-        <div className="mt-6">
-          <h3 className="text-l font-bold text-gray-700 mb-2 border-b border-gray-300 pb-1">
-            Description
-          </h3>
-          <p className="text-gray-600">{asset.asset_desc || "No description available"}</p>
+  <p className="text-gray-600">
+    <span className="font-semibold">Asset ID:</span> {asset.asset_id}
+  </p>
+  <div className="flex justify-between mt-2">
+    {/* Left side for X Coordinate */}
+    <div className="flex flex-col items-start">
+      <span className="font-semibold text-gray-600">X Coordinate:</span>
+      <span className="text-gray-600">{`${asset.asset_loc.x} m`}</span>
+    </div>
+    {/* Right side for Y Coordinate */}
+    <div className="flex flex-col items-start">
+      <span className="font-semibold text-gray-600">Y Coordinate:</span>
+      <span className="text-gray-600">{`${asset.asset_loc.y} m`}</span>
+    </div>
+  </div>
+</div>
         </div>
 
         {/* Close button */}
