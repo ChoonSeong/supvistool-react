@@ -48,14 +48,14 @@ function applyDynamicKalmanFilter(rssiValues, gatewayInfo) {
   let R = Math.max(variance / 10, 1);  // Slightly higher R for more resistance to noise
 
   // Adjust Q to make the filter less responsive to small fluctuations
-  const recentDistanceChange = Math.abs(gatewayInfo.previousDistance - gatewayInfo.distance || 0);
+  const recentRSSIChange = Math.abs(gatewayInfo.prevFilteredRSSI - gatewayInfo.filteredRSSI || 0);
   
   // Use a more aggressive adjustment for Q when there are no significant distance changes
-  let Q = recentDistanceChange > 2 ? 20 : 5;  // Reduced Q for smoother response
+  let Q = recentRSSIChange > 2 ? 30 : 3;  // Reduced Q for smoother response
 
   // Further reduce Q when variance is very low to stabilize quickly
-  if (variance < 10) {
-    Q = Math.max(Q / 4, 2);  // Lower Q even more for smoother results when variance is low
+  if (variance < 3) {
+    Q = Math.max(Q / 3, 1);  // Lower Q even more for smoother results when variance is low
   }
 
   // Ensure Q doesn't drop too low, which would make the filter too rigid
@@ -95,7 +95,7 @@ async function processRssiDataBatch(tagData) {
     let avgRssi = calculateAverageRssi(smoothedRssi);
     if (avgRssi === null) continue;
 
-    gatewayInfo.previousDistance = gatewayInfo.distance;
+    gatewayInfo.prevFilteredRSSI = gatewayInfo.filteredRSSI;
     gatewayInfo.filteredRSSI = avgRssi;
     gatewayInfo.distance = estimateDistanceForGateway(gateway, avgRssi);
     gatewayInfo.lastUpdated = new Date().toLocaleString();
@@ -125,7 +125,7 @@ function extractRssiData(jsonData) {
           filteredRSSI: null,
           distance: null,
           lastUpdated: null,
-          previousDistance: null,
+          prevFilteredRSSI: null,
           counter: 0,  // Initialize a counter for outlier detection
         };
       }
