@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway Calibration</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    form { margin-bottom: 20px; }
+    label, select, button { display: block; margin: 10px 0; }
+    canvas { max-width: 600px; margin-top: 20px; }
+    .message { margin: 20px 0; padding: 10px; background-color: #f8f9fa; border: 1px solid #ddd; }
+    #rssiValuesDisplay { margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 12px; border: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+
+<h1>Gateway Calibration</h1>
+
+<form id="calibrationForm">
+  <label for="gatewayId">Gateway ID:</label>
+  <select id="gatewayId"></select>
+
+  <label for="tagId">Tag ID:</label>
+  <select id="tagId"></select>
+
+  <button type="submit">Collect RSSI</button>
+</form>
+
+<div class="message" id="calibrationMessage"></div>
+
+<!-- Section for displaying collected RSSI values -->
+<div id="rssiValuesDisplay">
+  <h3>Collected RSSI Values</h3>
+  <table id="rssiTable">
+    <thead>
+      <tr>
+        <th>Distance (m)</th>
+        <th>Position</th>
+        <th>RSSI Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Collected RSSI values will be appended here -->
+    </tbody>
+  </table>
+</div>
+
+<canvas id="calibrationChart"></canvas>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const gatewaySelect = document.getElementById('gatewayId');
+  const tagSelect = document.getElementById('tagId');
+  const messageBox = document.getElementById('calibrationMessage');
+  const rssiTableBody = document.getElementById('rssiTable').querySelector('tbody');
+
+  let currentPosition = 1; // Start from position 1
+  let currentDistance = 1; // Start from 1 meter
+  let collectedRssi = [];  // Store all collected RSSI values for plotting
+
+  // Fetch data to populate dropdowns
+  async function populateDropdowns() {
+    try {
+      const response = await fetch('/data');
+      const data = await response.json();
+
+      if (!data || Object.keys(data).length === 0) {
+        messageBox.textContent = 'No data available. Please check your gateway and tag data.';
+        return;
+      }
+
+      // Populate Tag ID dropdown
+      for (const tagId in data) {
+        const option = document.createElement('option');
+        option.value = tagId;
+        option.text = tagId;
+        tagSelect.appendChild(option);
+      }
+
+      // Populate Gateway ID dropdown when a tag is selected
+      tagSelect.addEventListener('change', () => {
+        gatewaySelect.innerHTML = '';
+        const gateways = data[tagSelect.value]?.gateways || {};
+        for (const gatewayId in gateways) {
+          const option = document.createElement('option');
+          option.value = gatewayId;
+          option.text = gatewayId;
+          gatewaySelect.appendChild(option);
+        }
+      });
+
+      if (tagSelect.value) {
+        const gateways = data[tagSelect.value]?.gateways || {};
+        for (const gatewayId in gateways) {
+          const option = document.createElement('option');
+          option.value = gatewayId;
+          option.text = gatewayId;
+          gatewaySelect.appendChild(option);
+        }
+      }
+
+    } catch (error) {
+      messageBox.textContent = 'Error fetching data. Please check your connection and data source.';
+      console.error(error);
+    }
+  }
+
+  // Populate the dropdowns
+  populateDropdowns();
+  let averageRSSI = [];
+
+  // Handle form submission for collecting RSSI data
+  document.getElementById('calibrationForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const gatewayId = document.getElementById('gatewayId').value;
+    const tagId = document.getElementById('tagId').value;
+
+    if (!gatewayId || !tagId) {
+      messageBox.textContent = 'Please select a valid gateway and tag.';
+      return;
+    }
+
+    messageBox.textContent = `Collecting RSSI for ${currentDistance}m, position ${currentPosition}...`;
+
+    try {
+      const response = await fetch('/collect-rssi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gatewayId, tagId, distance: currentDistance, position: currentPosition })
+      });
+
+      const result = await response.json();
+
+      // Add collected RSSI values to the table     
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${currentDistance}m</td><td>${currentPosition}</td><td>${result.rssiValue}</td>`;
+      rssiTableBody.appendChild(row);
+      averageRSSI.push(result.rssiValue);
+      
+      if (currentPosition === 10){
+        averageRSSI = calculateAverage(averageRSSI);
+        collectedRssi.push(averageRSSI);
+        averageRSSI = [];
+      }
+
+      console.log(collectedRssi);
+
+      // Update position after each collection
+      if (currentPosition === 10) {
+        currentPosition = 1; // Reset to position 1
+        currentDistance++;   // Move to next distance
+
+        if (currentDistance > 6) {
+            messageBox.textContent = `Finished collecting data for all distances and positions. Calculating path loss exponent...`;          
+            
+            // Once all data is collected, compute the path loss exponent and plot the graph
+            const calibrationResponse = await fetch('/start-calibration', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                gatewayId: document.getElementById('gatewayId').value,  // Send the gatewayId
+                tagId: document.getElementById('tagId').value,          // Send the tagId
+                distances: [1, 2, 3, 4, 5, 6],                         // Send the distances
+                rssiValues: collectedRssi                               // Send the collected RSSI values
+                })
+            });
+
+            const calibrationResult = await calibrationResponse.json();
+            console.log(calibrationResult);
+            plotGraph(calibrationResult.distances, calibrationResult.rssiValues, calibrationResult.regressionLine);
+            messageBox.textContent = `Calibration complete! Path Loss Exponent (n): ${calibrationResult.pathLossExponent}`;
+
+        } else {
+            messageBox.textContent = `Done with ${currentDistance - 1}m. Now move to ${currentDistance}m, position 1.`;
+        }
+      } else {
+        currentPosition++; // Move to the next position
+        messageBox.textContent = `Done with position ${currentPosition - 1} at ${currentDistance}m. Move to position ${currentPosition}.`;
+      }
+
+    } catch (error) {
+      messageBox.textContent = `Calibration failed: ${error.message}`;
+      console.error(error);
+    }
+  });
+
+    // Function to calculate the average of a list of numbers
+    function calculateAverage(numbers) {
+        // Sum all numbers in the array
+        const sum = numbers.reduce((accumulator, currentValue) => accumulator + currentValue, 0);
+
+        // Calculate the average
+        const average = sum / numbers.length;
+
+        return average;
+    }
+
+  // Function to plot the calibration graph
+  function plotGraph(distances, rssiValues, regressionLine) {
+    const ctx = document.getElementById('calibrationChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Measured RSSI',
+          data: distances.map((d, i) => ({ x: Math.log10(d), y: rssiValues[i] })),
+          backgroundColor: 'blue'
+        }, {
+          label: 'Regression Line',
+          data: distances.map((d, i) => ({ x: Math.log10(d), y: regressionLine[i] })),
+          borderColor: 'red',
+          type: 'line',
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: 'log10(Distance)' } },
+          y: { title: { display: true, text: 'RSSI' } }
+        }
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,14 +1,24 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const router = require('./features/router');
 const mqttClient = require('./features/mqttClient');
 const fileProcessor = require('./features/fileProcessor');
 const sseHandler = require('./features/sseHandler');
 const rssiHandler = require('./features/rssiHandler');
 
+
+
 const app = express();
 app.use(cors());
+
+// Middleware to parse incoming JSON requests
+app.use(express.json());  // This is necessary to parse JSON bodies
 app.use("/", router);
+
+
+// Serve static files from the 'server/public' directory
+app.use(express.static(path.join(__dirname,'public')));
 
 // Initialize MQTT client and file processor
 mqttClient.initializeMqttClient();
@@ -68,4 +78,7 @@ app.get('/view-data', (req, res) => {
   `);
 });
 
-app.listen(4000, () => console.log('Server running on port 4000'));
+const PORT = process.env.PORT || 4000; // Use a different port if necessary
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

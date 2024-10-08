@@ -54,10 +54,10 @@ function calculatePathLoss(gatewayId) {
   // Calculate the path loss exponent n
   const n = -slope / 10;
 
-  console.log(
-    `Gateway ${gatewayId} - RSSI0 (Intercept): ${intercept.toFixed(2)} dBm`
-  );
-  console.log(`Gateway ${gatewayId} - Path Loss Exponent (n): ${n.toFixed(2)}`);
+  //console.log(
+  //  `Gateway ${gatewayId} - RSSI0 (Intercept): ${intercept.toFixed(2)} dBm`
+  //);
+  //console.log(`Gateway ${gatewayId} - Path Loss Exponent (n): ${n.toFixed(2)}`);
 
   return { rssi0: intercept, pathLossExponent: n };
 }
@@ -70,4 +70,22 @@ function estimateDistanceForGateway(gatewayId, rssiMeasured) {
   return Math.pow(10, (rssi0 - rssiMeasured) / (10 * pathLossExponent));
 }
 
-module.exports = { estimateDistanceForGateway };
+// pathLossModel.js
+function calculatePathLossExponent(rssiValues, distances) {
+  // Implement the path loss calculation logic here.
+  // Example: Use log-distance path loss model
+  // n = (RSSI0 - RSSI) / (10 * log10(d))
+
+  const rssi0 = rssiValues[0]; // Assuming the RSSI at 1 meter is the first value
+  const n = rssiValues.map((rssi, i) => {
+    return (rssi0 - rssi) / (10 * Math.log10(distances[i]));
+  });
+
+  // Returning average path loss exponent (n)
+  const averageN = n.reduce((acc, value) => acc + value, 0) / n.length;
+  return averageN;
+}
+
+
+
+module.exports = { estimateDistanceForGateway, calculatePathLossExponent };

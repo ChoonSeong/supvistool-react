@@ -10,6 +10,7 @@ const gatewayCoordinates = {
 
 let rssiData = {};
 const WINDOW_SIZE = 50;
+const OUTLIER_DETECTION_INTERVAL = 10; // Run outlier detection every 10 data
 
 // Calculates the average RSSI value from a list
 function calculateAverageRssi(rssiValues) {
@@ -22,59 +23,81 @@ function calculateAverageRssi(rssiValues) {
 function detectOutliers(rssiValues) {
   const median = rssiValues.sort((a, b) => a - b)[Math.floor(rssiValues.length / 2)];
   const MAD = rssiValues.reduce((acc, val) => acc + Math.abs(val - median), 0) / rssiValues.length;
-  return rssiValues.filter(rssi => {
+
+  // Keep track of the original length and filtered values
+  const filteredValues = rssiValues.filter(rssi => {
     const modifiedZ = 0.6745 * (rssi - median) / MAD;
-    return Math.abs(modifiedZ) <= 2.5;
+    return Math.abs(modifiedZ) <= 3;
   });
+
+  // Calculate the number of removed outliers
+  const removedCount = rssiValues.length - filteredValues.length;
+
+  // Log the number of removed outliers
+  //console.log(`Outliers removed: ${removedCount}`);
+
+  return filteredValues;
 }
 
-// Applies a dynamic Kalman filter based on RSSI variance and recent distance changes
+// Applies a more conservative adaptive Kalman filter for RSSI smoothing
 function applyDynamicKalmanFilter(rssiValues, gatewayInfo) {
-  // Calculate RSSI variance as a measure of noise
   const meanRssi = calculateAverageRssi(rssiValues);
   const variance = rssiValues.reduce((acc, rssi) => acc + Math.pow(rssi - meanRssi, 2), 0) / rssiValues.length;
 
-  // Dynamically adjust R based on RSSI variance (higher variance = noisier signal)
-  let R = variance > 15 ? 5 : 1;
+  // Make the filter more conservative by increasing R when variance is low
+  let R = Math.max(variance / 10, 1);  // Slightly higher R for more resistance to noise
 
-  // Adjust Q based on recent distance changes (faster changes = more responsive filter)
-  let recentDistanceChange = Math.abs(gatewayInfo.previousDistance - gatewayInfo.distance || 0);
-  let Q = recentDistanceChange > 2 ? 25 : 10;
+  // Adjust Q to make the filter less responsive to small fluctuations
+  const recentRSSIChange = Math.abs(gatewayInfo.prevFilteredRSSI - gatewayInfo.filteredRSSI || 0);
+  
+  // Use a more aggressive adjustment for Q when there are no significant distance changes
+  let Q = recentRSSIChange > 2 ? 30 : 3;  // Reduced Q for smoother response
+
+  // Further reduce Q when variance is very low to stabilize quickly
+  if (variance < 3) {
+    Q = Math.max(Q / 3, 1);  // Lower Q even more for smoother results when variance is low
+  }
+
+  // Ensure Q doesn't drop too low, which would make the filter too rigid
+  Q = Math.max(Q, 2);  // Set a minimum Q to prevent over-smoothing
 
   const kalman = new KalmanFilter({ R, Q });
 
-  // Apply the Kalman filter to all RSSI values in the window
+  // Apply the Kalman filter to each RSSI value in the window
   return rssiValues.map(rssi => kalman.filter(rssi));
 }
+
 
 // Processes RSSI data for each tag in a batch
 async function processRssiDataBatch(tagData) {
   for (let gateway in tagData.gateways) {
     let gatewayInfo = tagData.gateways[gateway];
 
-    if (gatewayInfo.rssiValues.length >= WINDOW_SIZE) {
-      gatewayInfo.rssiValues.splice(0, gatewayInfo.rssiValues.length - WINDOW_SIZE);
-    }
+    // Only take the 10 most recent RSSI values for filtering and processing
+    const recentRssiValues = gatewayInfo.rssiValues.slice(-10);
 
-    let cleanedRssi = detectOutliers(gatewayInfo.rssiValues);
-    if (cleanedRssi.length === 0) continue;
+    // Perform outlier detection on these 10 values
+    const cleanedRssi = detectOutliers(recentRssiValues);
 
-    let smoothedRssi = applyDynamicKalmanFilter(cleanedRssi, gatewayInfo);
-    let avgRssi = calculateAverageRssi(smoothedRssi);
+    if (cleanedRssi.length === 0) continue; // Skip if no valid RSSI data after outlier detection
+
+    // Apply Kalman filter to the cleaned RSSI values
+    const smoothedRssi = applyDynamicKalmanFilter(cleanedRssi, gatewayInfo);
+
+    // Calculate the average of the filtered values
+    const avgRssi = calculateAverageRssi(smoothedRssi);
     if (avgRssi === null) continue;
 
-    // Store the previous distance before updating it
-    gatewayInfo.previousDistance = gatewayInfo.distance;
-
-    // Store the filtered RSSI for output
+    // Update the filtered RSSI and distance
+    gatewayInfo.prevFilteredRSSI = gatewayInfo.filteredRSSI;
     gatewayInfo.filteredRSSI = avgRssi;
-
     gatewayInfo.distance = estimateDistanceForGateway(gateway, avgRssi);
     gatewayInfo.lastUpdated = new Date().toLocaleString();
   }
 
-  await performTrilateration();
+  await performTrilateration(); // Perform trilateration after updating all tag data
 }
+
 
 // Extracts RSSI data from JSON and processes it
 function extractRssiData(jsonData) {
@@ -97,7 +120,8 @@ function extractRssiData(jsonData) {
           filteredRSSI: null,
           distance: null,
           lastUpdated: null,
-          previousDistance: null,
+          prevFilteredRSSI: null,
+          counter: 0,  // Initialize a counter for outlier detection
         };
       }
 
