@@ -91,7 +91,7 @@ async function processRssiDataBatch(tagData) {
     // Update the filtered RSSI and distance
     gatewayInfo.prevFilteredRSSI = gatewayInfo.filteredRSSI;
     gatewayInfo.filteredRSSI = avgRssi;
-    gatewayInfo.distance = estimateDistanceForGateway(gateway, avgRssi);
+    gatewayInfo.distance = estimateDistanceForGateway(gateway, gatewayInfo.filteredRSSI);
     gatewayInfo.lastUpdated = new Date().toLocaleString();
   }
 
