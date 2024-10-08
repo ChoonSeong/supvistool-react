@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, FC } from "react";
 import AssetTrackerGenerator from "../util/AssetTrackerGenerator";
 // import AssetData from "../interface/AssetData";
-import AssetModal from "./AssetModal";
+import AssetModal from "./Asset/AssetModal";
+import FilterCheckboxes from "./FilterCheckboxes";
 import * as d3 from "d3";
 
 const MapArea = (/*props: {}*/) => {
@@ -188,6 +189,7 @@ const MapArea = (/*props: {}*/) => {
           onClose={() => setSelectedAsset(null)}
         />
       )}
+      <FilterCheckboxes assets={assetDataArr} />
     </>
   );
 };

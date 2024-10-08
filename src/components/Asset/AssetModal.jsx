@@ -1,5 +1,5 @@
 import React from "react";
-import AssetCategoryTranslator from "../util/AssetCategoryTranslator";
+import AssetCategoryTranslator from "../../util/AssetCategoryTranslator";
 
 const AssetModal = ({ asset, onClose }) => {
   if (!asset) return null; // Don't render if no asset is selected

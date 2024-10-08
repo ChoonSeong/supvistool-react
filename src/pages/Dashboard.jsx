@@ -20,7 +20,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex">
           {/* Map area */}
           <div className="flex-1 bg-white rounded-lg shadow">
-            <div className="h-full p-4 flex items-center justify-center text-gray-400">
+            <div className="h-full p-4 text-gray-400">
               <MapArea/>
             </div>
           </div>
