@@ -9,7 +9,7 @@ const gatewayCoordinates = {
 };
 
 let rssiData = {};
-const WINDOW_SIZE = 50;
+const WINDOW_SIZE = 100;
 const OUTLIER_DETECTION_INTERVAL = 10; // Run outlier detection every 10 data
 
 // Calculates the average RSSI value from a list
@@ -27,14 +27,14 @@ function detectOutliers(rssiValues) {
   // Keep track of the original length and filtered values
   const filteredValues = rssiValues.filter(rssi => {
     const modifiedZ = 0.6745 * (rssi - median) / MAD;
-    return Math.abs(modifiedZ) <= 3;
+    return Math.abs(modifiedZ) <= 1.5;
   });
 
   // Calculate the number of removed outliers
   const removedCount = rssiValues.length - filteredValues.length;
 
   // Log the number of removed outliers
-  //console.log(`Outliers removed: ${removedCount}`);
+  console.log(`Outliers removed: ${removedCount}`);
 
   return filteredValues;
 }
@@ -61,10 +61,14 @@ function applyDynamicKalmanFilter(rssiValues, gatewayInfo) {
   // Ensure Q doesn't drop too low, which would make the filter too rigid
   Q = Math.max(Q, 2);  // Set a minimum Q to prevent over-smoothing
 
-  const kalman = new KalmanFilter({ R, Q });
+  R = 6
+  Q = 1
 
+  const kalman = new KalmanFilter({ R, Q });
+  //console.log("before : " + rssiValues);
   // Apply the Kalman filter to each RSSI value in the window
   return rssiValues.map(rssi => kalman.filter(rssi));
+  //return rssiValues;
 }
 
 
@@ -73,16 +77,33 @@ async function processRssiDataBatch(tagData) {
   for (let gateway in tagData.gateways) {
     let gatewayInfo = tagData.gateways[gateway];
 
-    // Only take the 10 most recent RSSI values for filtering and processing
+    // Log current sliding window before update
+    //console.log(`Before sliding window update for gateway ${gateway}: `, gatewayInfo.rssiValues);
+
+    // Only take the 10 most recent RSSI values for outlier detection
     const recentRssiValues = gatewayInfo.rssiValues.slice(-10);
 
     // Perform outlier detection on these 10 values
     const cleanedRssi = detectOutliers(recentRssiValues);
 
+    //console.log(`Outlier detection for gateway ${gateway}: `, cleanedRssi);
+
     if (cleanedRssi.length === 0) continue; // Skip if no valid RSSI data after outlier detection
 
-    // Apply Kalman filter to the cleaned RSSI values
-    const smoothedRssi = applyDynamicKalmanFilter(cleanedRssi, gatewayInfo);
+    // Update the sliding window by removing the old values and adding the new cleaned RSSI values
+    const remainingWindowSpace = WINDOW_SIZE - gatewayInfo.rssiValues.length;
+    if (remainingWindowSpace < cleanedRssi.length) {
+      //console.log(`Shifting sliding window for gateway ${gateway}. Removing ${cleanedRssi.length - remainingWindowSpace} values.`);
+      gatewayInfo.rssiValues.splice(0, cleanedRssi.length - remainingWindowSpace); // Remove oldest data
+    }
+    gatewayInfo.rssiValues.push(...cleanedRssi); // Add cleaned RSSI values to the sliding window
+
+    // Log updated sliding window
+    //console.log(`After sliding window update for gateway ${gateway}: `, gatewayInfo.rssiValues);
+
+    // Apply Kalman filter to the entire sliding window
+    const smoothedRssi = applyDynamicKalmanFilter(gatewayInfo.rssiValues, gatewayInfo);
+    //console.log(`Smoothed RSSI values for gateway ${gateway}: `, smoothedRssi);
 
     // Calculate the average of the filtered values
     const avgRssi = calculateAverageRssi(smoothedRssi);
@@ -93,10 +114,15 @@ async function processRssiDataBatch(tagData) {
     gatewayInfo.filteredRSSI = avgRssi;
     gatewayInfo.distance = estimateDistanceForGateway(gateway, gatewayInfo.filteredRSSI);
     gatewayInfo.lastUpdated = new Date().toLocaleString();
+
+    // Log the final filtered RSSI and distance
+    //console.log(`Final filtered RSSI for gateway ${gateway}: ${avgRssi}, Distance: ${gatewayInfo.distance}`);
   }
 
   await performTrilateration(); // Perform trilateration after updating all tag data
 }
+
+
 
 
 // Extracts RSSI data from JSON and processes it
