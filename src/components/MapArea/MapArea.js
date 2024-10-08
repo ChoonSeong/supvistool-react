@@ -6,6 +6,12 @@ const MapArea = () => {
   const [assetDataArr, setAssetDataArray] = useState([]);
   const svgMapRef = useRef(null);
 
+  const gatewayPositions = {
+    ac233ffb3adc: [5.264, 0],
+    ac233fc17756: [3.15, 6.83],
+    ac233ffb3adb: [13.6, 0],
+  };
+
   const fetchData = async () => {
     try {
       const response = await fetch("http://localhost:4000/data");
@@ -20,12 +26,27 @@ const MapArea = () => {
           x: data[tagId].position.x,
           y: data[tagId].position.y,
         },
-        asset_qty: 1, // Set to 1 as an example
-        asset_exp_date: null, // Not available in your current data
+        asset_qty: 1,
+        asset_exp_date: null,
       }));
 
+      // Add fixed gateway positions to the asset data array
+      const fixedGateways = Object.keys(gatewayPositions).map((tagId) => ({
+        asset_id: tagId,
+        asset_desc: "Fixed Gateway",
+        asset_cat: "G",
+        asset_loc: {
+          x: gatewayPositions[tagId][0],
+          y: gatewayPositions[tagId][1],
+        },
+        asset_qty: 1,
+        asset_exp_date: null,
+      }));
+
+      const combinedAssetDataArr = [...newAssetDataArr, ...fixedGateways];
+
       // Update state with the new data
-      setAssetDataArray(newAssetDataArr);
+      setAssetDataArray(combinedAssetDataArr);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
