@@ -1,22 +1,28 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
+import ToolTip from "./ToolTip";
 
 // interface PharmaceuticalSVGInterface {
 //   svgClassName: string;
 // }
 
-function PharmaceuticalSVG({svgClassName}/* : PharmaceuticalSVGInterface*/) {
+function PharmaceuticalSVG({ asset_data }/* : PharmaceuticalSVGInterface*/) {
   return (
     <svg
       fill="white"
-      height="50"
-      width="50"
-      viewBox="-100 -100 200 200"
+      height="100"
+      width="100"
+      viewBox="0 -10 100 100"
       opacity="0.8"
-      className={svgClassName}
+      className={`${asset_data.asset_id}-[${asset_data.asset_loc.x}, ${asset_data.asset_loc.y}]`}
     >
-      <circle cx="0" cy="0" r="100" fill="#4682B4" />
-      <g transform="translate(-78, -80) scale(0.26)">
+      {/* Circle */}
+      <circle cx="50" cy="50" r="25" fill="#4682B4" />
+
+      {/* Tooltip visibility toggled based on hover */}
+      {<ToolTip asset_data={asset_data} />}
+
+      <g transform="translate(30, 30) scale(0.065)">
         <g>
           <path
             d="M306.002,175.399c-3.49,0-6.815,1.483-9.143,4.079c-7.238,8.065-70.709,79.975-70.709,120.816
@@ -40,6 +46,6 @@ function PharmaceuticalSVG({svgClassName}/* : PharmaceuticalSVGInterface*/) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderPharmaceuticalSVG({svgClassName}/* : PharmaceuticalSVGInterface*/) {
-  return ReactDOMServer.renderToStaticMarkup(<PharmaceuticalSVG svgClassName={svgClassName} />);
+export function renderPharmaceuticalSVG({asset_data}/* : PharmaceuticalSVGInterface*/) {
+  return ReactDOMServer.renderToStaticMarkup(<PharmaceuticalSVG asset_data={asset_data} />);
 }

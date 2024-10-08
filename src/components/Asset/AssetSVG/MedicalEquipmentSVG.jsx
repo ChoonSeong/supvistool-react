@@ -1,24 +1,31 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
+import ToolTip from "./ToolTip";
 
 // interface MedicalEquipmentSVGInterface {
 //   svgClassName: string;
 // }
 
-function MedicalEquipmentSVG ({svgClassName}/* : MedicalEquipmentSVGInterface*/) {
+function MedicalEquipmentSVG(
+  { asset_data } /* : MedicalEquipmentSVGInterface*/
+) {
   return (
     <>
       <svg
         fill="white"
-        viewBox="-100 -100 200 200"
-        width="50"
-        height="50"
+        viewBox="0 -10 100 100"
+        width="100"
+        height="100"
         opacity="0.8"
-        className={svgClassName}
+        className={`${asset_data.asset_id}-[${asset_data.asset_loc.x}, ${asset_data.asset_loc.y}]`}
       >
-        <circle cx="0" cy="0" r="100" fill="#4682B4" />
 
-        <g transform="translate(-65, -70) scale(0.7)">
+        <circle cx="50" cy="50" r="25" fill="#4682B4" />
+
+      {/* Tooltip visibility toggled based on hover */}
+      {<ToolTip asset_data={asset_data} />}
+
+        <g transform="translate(30, 29) scale(0.2)">
           <path
             d="M171.481,30.562H21.853C9.803,30.562,0,40.365,0,52.414v88.505c0,12.049,9.803,21.853,21.853,21.853h149.628
         c12.049,0,21.853-9.803,21.853-21.853V52.414C193.333,40.365,183.53,30.562,171.481,30.562z M183.333,140.919
@@ -47,8 +54,10 @@ function MedicalEquipmentSVG ({svgClassName}/* : MedicalEquipmentSVGInterface*/)
 }
 
 // Create a function to render the component as an SVG string
-export function renderMedicalEquipmentSVG({svgClassName}/* : MedicalEquipmentSVGInterface*/) {
+export function renderMedicalEquipmentSVG(
+  { asset_data } /* : MedicalEquipmentSVGInterface*/
+) {
   return ReactDOMServer.renderToStaticMarkup(
-    <MedicalEquipmentSVG svgClassName={svgClassName} />
+    <MedicalEquipmentSVG asset_data={asset_data} />
   );
 }

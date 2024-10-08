@@ -1,24 +1,29 @@
 import React from "react";
 import ReactDOMServer from "react-dom/server"; // Import to render to static HTML string
+import ToolTip from "./ToolTip";
 
 // interface ConsumableSVGInterface {
 //   svgClassName: string;
 // }
 
-function ConsumableSVG({svgClassName}/* : ConsumableSVGInterface*/) {
+function ConsumableSVG({ asset_data }/* : ConsumableSVGInterface*/) {
   return (
     <svg
       fill="white"
-      width="50"
-      height="50"
-      viewBox="-100 -100 200 200"
+      width="100"
+      height="100"
+      viewBox="0 -10 100 100"
       opacity="0.8"
-      className={svgClassName}
+      className={`${asset_data.asset_id}-[${asset_data.asset_loc.x}, ${asset_data.asset_loc.y}]`}
     >
       {/* Background Circle */}
-      <circle cx="0" cy="0" r="100" fill="#4682B4" />
+      <circle cx="50" cy="50" r="25" fill="#4682B4" />
+
+      {/* Tooltip visibility toggled based on hover */}
+      {<ToolTip asset_data={asset_data} />}
+
       {/* Consumable Shapes Group */}
-      <g transform="translate(-70, -70) scale(0.28)">
+      <g transform="translate(32, 32) scale(0.07)">
         {/* First Rectangle */}
         <rect
           x="-24.43"
@@ -62,6 +67,6 @@ function ConsumableSVG({svgClassName}/* : ConsumableSVGInterface*/) {
 }
 
 // Create a function to render the component as an SVG string
-export function renderConsumableSVG({svgClassName} /*: ConsumableSVGInterface*/) {
-  return ReactDOMServer.renderToStaticMarkup(<ConsumableSVG svgClassName={svgClassName} />);
+export function renderConsumableSVG({asset_data} /*: ConsumableSVGInterface*/) {
+  return ReactDOMServer.renderToStaticMarkup(<ConsumableSVG asset_data={asset_data} />);
 }

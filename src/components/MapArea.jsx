@@ -1,63 +1,68 @@
 import React, { useEffect, useRef, useState, FC } from "react";
-import AssetTrackerGenerator from "../../util/AssetTrackerGenerator";
-import AssetData from "../../interface/AssetData";
+import AssetTrackerGenerator from "../util/AssetTrackerGenerator";
+// import AssetData from "../interface/AssetData";
+import AssetModal from "./AssetModal";
 import * as d3 from "d3";
 
 const MapArea = (/*props: {}*/) => {
-  const [assetDataArr, setAssetDataArray] = useState/*<AssetData[]>*/([
-    {
-      asset_id: "a_1",
-      asset_desc: "Blood Type: A",
-      asset_cat: "P",
-      asset_loc: { x: 5, y: 5 },
-      asset_qty: 10,
-      asset_exp_date: "1/2/2025",
-    },
-    {
-      asset_id: "a_2",
-      asset_desc: "Company A Hospital Bed. Code: 1234",
-      asset_cat: "F",
-      asset_loc: { x: 3, y: 6 },
-      asset_qty: 1,
-      asset_exp_date: null,
-    },
-    {
-      asset_id: "a_3",
-      asset_desc: "Infusion Pumps",
-      asset_cat: "M",
-      asset_loc: { x: 10, y: 1 },
-      asset_qty: 1,
-      asset_exp_date: "1/2/2025",
-    },
-    {
-      asset_id: "a_4",
-      asset_desc: "Company B Wheelchair. Code: 5678",
-      asset_cat: "F",
-      asset_loc: { x: 6.7, y: 1 },
-      asset_qty: 1,
-      asset_exp_date: null,
-    },
-    {
-      asset_id: "a_5",
-      asset_desc: "MineW_1234",
-      asset_cat: "G",
-      asset_loc: { x: 4.7, y: 1 },
-      asset_qty: 1,
-      asset_exp_date: null,
-    },
-  ]);
-  const svgMapRef = useRef/*<SVGSVGElement | null>*/(null);
+  const [assetDataArr, setAssetDataArray] = useState(
+    /*<AssetData[]>*/ [
+      {
+        asset_id: "a_1",
+        asset_desc: "Blood Type: A",
+        asset_cat: "P",
+        asset_loc: { x: 5, y: 5 },
+        asset_qty: 10,
+        asset_exp_date: "1/2/2025",
+      },
+      {
+        asset_id: "a_1234567890123456",
+        asset_desc: "Company A Hospital Bed. Code: 1234",
+        asset_cat: "F",
+        asset_loc: { x: 3, y: 6 },
+        asset_qty: 1,
+        asset_exp_date: null,
+      },
+      {
+        asset_id: "a_3",
+        asset_desc: "Infusion Pumps",
+        asset_cat: "M",
+        asset_loc: { x: 10, y: 1 },
+        asset_qty: 1,
+        asset_exp_date: "1/2/2025",
+      },
+      {
+        asset_id: "a_4",
+        asset_desc: "Company B Wheelchair. Code: 5678",
+        asset_cat: "C",
+        asset_loc: { x: 6.7, y: 1 },
+        asset_qty: 1,
+        asset_exp_date: null,
+      },
+      {
+        asset_id: "a_5",
+        asset_desc: "MineW_1234",
+        asset_cat: "G",
+        asset_loc: { x: 4.7, y: 1 },
+        asset_qty: 1,
+        asset_exp_date: null,
+      },
+    ]
+  );
+
+  const [selectedAsset, setSelectedAsset] = useState(null); // Track selected asset for modal
+  const svgMapRef = useRef(/*<SVGSVGElement | null>*/ null);
 
   useEffect(() => {
     if (!svgMapRef.current) return;
     // Creates the d3 map svg object by accessing the DOM object directly (with its ref)
-    const svgMap = d3.select/*<SVGSVGElement, unknown>*/(svgMapRef.current);
+    const svgMap = d3.select(/*<SVGSVGElement, unknown>*/ svgMapRef.current);
 
     // Clears existing content in case of rerenders
     svgMap.selectAll("*").remove();
 
     // Set the viewBox to match the drawing area
-    svgMap.attr("viewBox", `-100 -100 1460 883`);
+    svgMap.attr("viewBox", `-100 -100 1530 953`);
 
     // Define points of the inner polygon (inner walls)
     const innerPolygonPoints = [
@@ -161,7 +166,11 @@ const MapArea = (/*props: {}*/) => {
       .style("cursor", "default");
 
     // --- Markers ---
-    AssetTrackerGenerator({ assetDataArr, svgMap });
+    AssetTrackerGenerator({
+      assetDataArr,
+      svgMap,
+      onAssetClick: (asset) => setSelectedAsset(asset),
+    });
 
     return () => {
       // Cleanup D3 event listeners or any other DOM manipulations if necessary.
@@ -169,7 +178,18 @@ const MapArea = (/*props: {}*/) => {
     };
   }, [assetDataArr, svgMapRef]);
 
-  return <svg ref={svgMapRef} width="100%" height="500px" />;
+  return (
+    <>
+      <svg ref={svgMapRef} />
+      {/* Render modal if an asset is selected */}
+      {selectedAsset && (
+        <AssetModal
+          asset={selectedAsset}
+          onClose={() => setSelectedAsset(null)}
+        />
+      )}
+    </>
+  );
 };
 
 export default MapArea;

@@ -10,10 +10,6 @@
   flex: 1; /* Allow this element to grow and fill space */
 }
 
-.h-full {
-  height: 100%; /* Ensure this fills the parent's height */
-}
-
 .bg-white {
   background-color: white; /* Background color */
   border-radius: 0.5rem; /* Rounded corners */
