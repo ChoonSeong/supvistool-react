@@ -9,7 +9,7 @@ const gatewayCoordinates = {
 };
 
 let rssiData = {};
-const WINDOW_SIZE = 100;
+const WINDOW_SIZE = 30;
 
 // Calculates the average RSSI value from a list
 function calculateAverageRssi(rssiValues) {
@@ -30,7 +30,7 @@ function detectOutliers(rssiValues) {
 
   const filteredValues = rssiValues.filter(rssi => {
     const modifiedZ = 0.6745 * (rssi - median) / MAD;
-    return Math.abs(modifiedZ) <= 2.5;
+    return Math.abs(modifiedZ) <= 2;
   });
 
   // Calculate the number of removed outliers
@@ -45,10 +45,10 @@ function detectOutliers(rssiValues) {
 
 // Adaptive Kalman filter with dynamic R and Q adjustments based on fluctuation and trend detection
 function applyKalmanFilter(gatewayInfo, rssiValues) {
-  let baseR = 500;  // Base value for R
-  let baseQ = 0.001; // Base value for Q
+  let baseR = 1000;  // Base value for R
+  let baseQ = 0.01; // Base value for Q
   const acceptableFluctuation = 1; // Acceptable fluctuation in dB
-  const trendFactor = 0.05; // Adjustment factor for trends
+  const trendFactor = 0.01; // Adjustment factor for trends
   
   // Calculate the mean and variance of the RSSI values in the sliding window
   const meanRssi = calculateAverageRssi(rssiValues);
@@ -64,12 +64,12 @@ function applyKalmanFilter(gatewayInfo, rssiValues) {
 
   // More stability when fluctuation is low (less than acceptable fluctuation)
   if (fluctuation < acceptableFluctuation) {
-    R = baseR + (100 * (1 - fluctuation / acceptableFluctuation));
+    R = baseR + (500 * (1 - fluctuation / acceptableFluctuation));
   }
 
   // Allow fast response for larger fluctuations
   if (fluctuation > acceptableFluctuation) {
-    Q = baseQ + (0.001 * (fluctuation - acceptableFluctuation));
+    Q = baseQ + (0.01 * (fluctuation - acceptableFluctuation));
   }
 
   // Adjust R or Q based on RSSI trend (rising or falling)
