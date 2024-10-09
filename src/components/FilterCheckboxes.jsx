@@ -1,104 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  Box,
-  Checkbox,
-  Collapse,
-  Stack,
-  Text,
-  VStack,
-  Heading,
-} from '@chakra-ui/react';
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+} from "@chakra-ui/react";
+import { FaFilter } from "react-icons/fa"; // Import the filter icon
 
-const FilterCheckboxes = ({ assets }) => {
-  // Group assets by category
-  const categorizedAssets = assets.reduce((acc, asset) => {
-    const { asset_cat } = asset;
-    if (!acc[asset_cat]) {
-      acc[asset_cat] = [];
-    }
-    acc[asset_cat].push(asset);
+/**
+ * A component that displays filterable checkboxes for assets in a dropdown menu, allowing users to select individual assets.
+ *
+ * @param {Object[]} assets - Array of asset objects with asset_id and asset_desc properties.
+ * @param {function} onAssetChange - Callback function to handle changes in the selected assets.
+ */
+const FilterCheckboxes = ({ assets, onAssetChange }) => {
+  // Initialize all assets as checked by default
+  const initialCheckedAssets = assets.reduce((acc, asset) => {
+    acc[asset.asset_id] = true;
     return acc;
   }, {});
 
-  // State to manage checked boxes
-  const [checkedCategories, setCheckedCategories] = useState({});
-  const [checkedAssets, setCheckedAssets] = useState({});
+  const [checkedAssets, setCheckedAssets] = useState(initialCheckedAssets);
 
-  // Handle category checkbox change
-  const handleCategoryChange = (category) => {
-    setCheckedCategories((prev) => {
-      const newChecked = !prev[category];
-      return { ...prev, [category]: newChecked };
-    });
-
-    // Check or uncheck all child assets
-    const assetsToCheck = categorizedAssets[category].map(asset => asset.asset_id);
-    setCheckedAssets((prev) => {
-      const newCheckedAssets = {};
-      assetsToCheck.forEach(id => {
-        newCheckedAssets[id] = !prev[id]; // Toggle the checked state
-      });
-      return { ...prev, ...newCheckedAssets };
-    });
-  };
-
-  // Handle asset checkbox change
   const handleAssetChange = (assetId) => {
-    setCheckedAssets((prev) => ({
-      ...prev,
-      [assetId]: !prev[assetId], // Toggle the checked state
-    }));
+    setCheckedAssets((prev) => {
+      const newCheckedAssets = {
+        ...prev,
+        [assetId]: !prev[assetId], // Toggle the asset's checked state
+      };
+
+      onAssetChange(newCheckedAssets); // Pass updated checked assets to the parent
+      return newCheckedAssets;
+    });
   };
 
   return (
-    <Box p={4}>
-      <Heading size="lg" mb={4}>
-        Filter by Asset Categories
-      </Heading>
-      {Object.keys(categorizedAssets).map((category) => (
-        <VStack align="start" key={category} mb={4}>
-          <Checkbox
-            isChecked={checkedCategories[category] || false}
-            onChange={() => handleCategoryChange(category)}
+    <>
+      <Menu closeOnSelect={false}>
+        <MenuButton
+          as={IconButton}
+          icon={<FaFilter />} // Set the icon for the button
+          colorScheme="blue"
+          aria-label="Filter Assets"
+        />
+        <MenuList minWidth="240px">
+          <MenuOptionGroup
+            title="Assets"
+            type="checkbox"
+            value={Object.keys(checkedAssets).filter(
+              (assetId) => checkedAssets[assetId]
+            )}
+            onChange={(value) => {
+              const newCheckedAssets = { ...checkedAssets };
+              assets.forEach((asset) => {
+                newCheckedAssets[asset.asset_id] = value.includes(
+                  asset.asset_id
+                );
+              });
+              setCheckedAssets(newCheckedAssets);
+              onAssetChange(newCheckedAssets);
+            }}
           >
-            <Text fontWeight="bold">{getFullCategoryName(category)}</Text>
-          </Checkbox>
-          <Collapse in={checkedCategories[category]}>
-            <Stack spacing={2} pl={6}>
-              {categorizedAssets[category].map((asset) => (
-                <Checkbox
-                  key={asset.asset_id}
-                  isChecked={checkedAssets[asset.asset_id] || false}
-                  onChange={() => handleAssetChange(asset.asset_id)}
-                  isDisabled={!checkedCategories[category]} // Disable if parent is not checked
-                >
-                  {asset.asset_id}: {asset.asset_desc}
-                </Checkbox>
-              ))}
-            </Stack>
-          </Collapse>
-        </VStack>
-      ))}
-    </Box>
+            {assets.map((asset) => (
+              <MenuItemOption key={asset.asset_id} value={asset.asset_id}>
+                {asset.asset_id}: {asset.asset_desc}
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
+    </>
   );
-};
-
-// Utility function to translate category codes to full names
-const getFullCategoryName = (category) => {
-  switch (category) {
-    case "G":
-      return "Gateway";
-    case "M":
-      return "Medical Equipment";
-    case "F":
-      return "Fixture";
-    case "C":
-      return "Consumable";
-    case "P":
-      return "Pharmaceutical";
-    default:
-      return "Unknown Category";
-  }
 };
 
 export default FilterCheckboxes;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import MapArea from '../components/MapArea';
 export default function Dashboard() {
 

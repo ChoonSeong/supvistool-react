@@ -12,12 +12,13 @@ import * as d3 from "d3";
 // }
 
 const  AssetTrackerGenerator = ({ assetDataArr, svgMap, onAssetClick  }/*: AssetTrackerInterface*/)/*: void*/ => {
-  let new_x/*: number*/, new_y/*: number*/, asset_id/*: string*/;
+  let new_x/*: number*/, new_y/*: number*/;
+
+  console.log(assetDataArr);
 
   for (const asset of assetDataArr){
     new_x = asset.asset_loc.x * 100 - 50; // X position
     new_y = 683 - (asset.asset_loc.y * 100) - 60; // Y position
-    asset_id = asset.asset_id;
 
   // Create a group to hold the SVG
   const iconGroup = svgMap
