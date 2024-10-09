@@ -1,11 +1,11 @@
-const KalmanFilter = require('kalmanjs');
+const KalmanFilter = require("kalmanjs");
 const { estimateDistanceForGateway } = require("./logDistance");
 const { leastSquaresTrilateration } = require("./leastSquareTrilateration");
 
 const gatewayCoordinates = {
-  "ac233ffb3adc": [5.264, 0],
-  "ac233fc17756": [3.15, 6.83],
-  "ac233ffb3adb": [13.6, 0],
+  ac233ffb3adc: [5.264, 0],
+  ac233fc17756: [3.15, 6.83],
+  ac233ffb3adb: [13.6, 0],
 };
 
 let rssiData = {};
@@ -20,16 +20,20 @@ function calculateAverageRssi(rssiValues) {
 
 // Function to detect and remove outliers using the modified Z-score
 function detectOutliers(rssiValues) {
-  const median = rssiValues.sort((a, b) => a - b)[Math.floor(rssiValues.length / 2)];
-  const MAD = rssiValues.reduce((acc, val) => acc + Math.abs(val - median), 0) / rssiValues.length;
+  const median = rssiValues.sort((a, b) => a - b)[
+    Math.floor(rssiValues.length / 2)
+  ];
+  const MAD =
+    rssiValues.reduce((acc, val) => acc + Math.abs(val - median), 0) /
+    rssiValues.length;
 
   // If MAD is zero, return the original array because there are no outliers
   if (MAD === 0) {
     return rssiValues;
   }
 
-  const filteredValues = rssiValues.filter(rssi => {
-    const modifiedZ = 0.6745 * (rssi - median) / MAD;
+  const filteredValues = rssiValues.filter((rssi) => {
+    const modifiedZ = (0.6745 * (rssi - median)) / MAD;
     return Math.abs(modifiedZ) <= 2;
   });
 
@@ -39,20 +43,21 @@ function detectOutliers(rssiValues) {
   // Log or return the number of removed values
   //console.log(`Outliers removed: ${removedCount}`);
 
-
   return filteredValues;
 }
 
 // Adaptive Kalman filter with dynamic R and Q adjustments based on fluctuation and trend detection
 function applyKalmanFilter(gatewayInfo, rssiValues) {
-  let baseR = 1000;  // Base value for R
+  let baseR = 1000; // Base value for R
   let baseQ = 0.01; // Base value for Q
   const acceptableFluctuation = 1; // Acceptable fluctuation in dB
   const trendFactor = 0.01; // Adjustment factor for trends
-  
+
   // Calculate the mean and variance of the RSSI values in the sliding window
   const meanRssi = calculateAverageRssi(rssiValues);
-  const variance = rssiValues.reduce((acc, rssi) => acc + Math.pow(rssi - meanRssi, 2), 0) / rssiValues.length;
+  const variance =
+    rssiValues.reduce((acc, rssi) => acc + Math.pow(rssi - meanRssi, 2), 0) /
+    rssiValues.length;
   const fluctuation = Math.sqrt(variance);
 
   // Calculate trend: difference between first and last RSSI in the window
@@ -64,12 +69,12 @@ function applyKalmanFilter(gatewayInfo, rssiValues) {
 
   // More stability when fluctuation is low (less than acceptable fluctuation)
   if (fluctuation < acceptableFluctuation) {
-    R = baseR + (500 * (1 - fluctuation / acceptableFluctuation));
+    R = baseR + 500 * (1 - fluctuation / acceptableFluctuation);
   }
 
   // Allow fast response for larger fluctuations
   if (fluctuation > acceptableFluctuation) {
-    Q = baseQ + (0.01 * (fluctuation - acceptableFluctuation));
+    Q = baseQ + 0.01 * (fluctuation - acceptableFluctuation);
   }
 
   // Adjust R or Q based on RSSI trend (rising or falling)
@@ -97,7 +102,7 @@ function applyKalmanFilter(gatewayInfo, rssiValues) {
   }
 
   // Apply the Kalman filter to each RSSI value in the sliding window
-  return rssiValues.map(rssi => kalman.filter(rssi));
+  return rssiValues.map((rssi) => kalman.filter(rssi));
 }
 
 // Function to calculate Exponential Moving Average (EMA)
@@ -106,18 +111,17 @@ function calculateEMA(rssiValues, prevEma, alpha = 0.1) {
   let ema = prevEma !== null ? prevEma : rssiValues[0];
 
   // Apply the EMA formula iteratively
-  rssiValues.forEach(rssi => {
+  rssiValues.forEach((rssi) => {
     ema = alpha * rssi + (1 - alpha) * ema;
   });
 
   return ema;
 }
 
-
 // Process RSSI data for each tag in a batch
 async function processRssiDataBatch(tagData) {
   for (let gateway in tagData.gateways) {
-     let gatewayInfo = tagData.gateways[gateway];
+    let gatewayInfo = tagData.gateways[gateway];
 
     // Check if RSSI values exist
     if (!gatewayInfo.rssiValues || gatewayInfo.rssiValues.length === 0) {
@@ -136,7 +140,6 @@ async function processRssiDataBatch(tagData) {
     // Replace the last 10 values in rssiValues with the cleaned RSSI values
     gatewayInfo.rssiValues.splice(-10, 10, ...cleanedRssi);
 
-
     // Apply Kalman filter to the entire updated RSSI window
     const smoothedRssi = applyKalmanFilter(gatewayInfo, gatewayInfo.rssiValues);
     if (!smoothedRssi || smoothedRssi.length === 0) {
@@ -145,7 +148,6 @@ async function processRssiDataBatch(tagData) {
 
     // Apply EMA after Kalman filtering
     const emaRssi = calculateEMA(smoothedRssi, gatewayInfo.filteredRSSI);
-
 
     // Update the filtered RSSI and distance
     gatewayInfo.prevFilteredRSSI = gatewayInfo.filteredRSSI;
@@ -157,9 +159,6 @@ async function processRssiDataBatch(tagData) {
   // Perform trilateration after processing all gateways
   await performTrilateration();
 }
-
-
-
 
 // Extract RSSI data from incoming JSON and process it
 function extractRssiData(jsonData) {
@@ -188,14 +187,12 @@ function extractRssiData(jsonData) {
         };
       }
 
-      
       const gatewayInfoForTag = rssiData[macAddress].gateways[gatewayId];
       if (gatewayInfoForTag.rssiValues.length >= WINDOW_SIZE) {
         gatewayInfoForTag.rssiValues.shift();
       }
 
       gatewayInfoForTag.rssiValues.push(rssi);
-
 
       gatewayInfoForTag.lastUpdated = new Date(tagInfo.timestamp).toISOString();
     }
@@ -218,15 +215,24 @@ async function performTrilateration() {
     const distances = [];
 
     for (const gatewayId in gateways) {
-      if (gatewayCoordinates[gatewayId] && gateways[gatewayId].distance !== null) {
+      if (
+        gatewayCoordinates[gatewayId] &&
+        gateways[gatewayId].distance !== null
+      ) {
         gatewayCoords.push(gatewayCoordinates[gatewayId]);
         distances.push(gateways[gatewayId].distance);
       }
     }
 
     if (gatewayCoords.length >= 3 && distances.length >= 3) {
-      const estimatedPosition = await leastSquaresTrilateration(gatewayCoords, distances);
-      rssiData[mac].position = { x: estimatedPosition[0], y: estimatedPosition[1] };
+      const estimatedPosition = await leastSquaresTrilateration(
+        gatewayCoords,
+        distances
+      );
+      rssiData[mac].position = {
+        x: estimatedPosition[0],
+        y: estimatedPosition[1],
+      };
     } else {
       rssiData[mac].position = { x: null, y: null };
     }
@@ -237,12 +243,12 @@ async function performTrilateration() {
 function getRssiData() {
   const dataToReturn = JSON.parse(JSON.stringify(rssiData));
 
-  for (const mac in dataToReturn) {
-    const gateways = dataToReturn[mac].gateways;
-    for (const gateway in gateways) {
-      delete gateways[gateway].rssiValues; // Remove rssiValues but keep filteredRSSI, distance, etc.
-    }
-  }
+  // for (const mac in dataToReturn) {
+  //   const gateways = dataToReturn[mac].gateways;
+  //   for (const gateway in gateways) {
+  //     delete gateways[gateway].rssiValues; // Remove rssiValues but keep filteredRSSI, distance, etc.
+  //   }
+  // }
 
   return dataToReturn;
 }
