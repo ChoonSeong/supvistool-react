@@ -163,7 +163,18 @@ function calculatePathLoss(gatewayId) {
 
 // Function to estimate the distance based on measured RSSI for a specific gateway
 function estimateDistanceForGateway(gatewayId, rssiMeasured) {
-  const { rssi0, pathLossExponent } = calculatePathLoss(gatewayId);
+  let rssi0;
+  let pathLossExponent;
+  if (gatewayId == "ac233ffb3adc"){
+    rssi0 = -37.891;
+    pathLossExponent = 1.293453143651164;
+  } else if (gatewayId == "ac233fc17756") {
+    rssi0 = -37.891;
+    pathLossExponent = 1.293453143651164;
+  } else if (gatewayId == "ac233ffb3adb"){
+    rssi0 = -37.891;
+    pathLossExponent = 1.293453143651164;
+  }
 
   // Using the rearranged path loss model formula
   return Math.pow(10, (rssi0 - rssiMeasured) / (10 * pathLossExponent));
